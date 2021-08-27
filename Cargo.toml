@@ -1,0 +1,16 @@
+[package]
+name = "oge"
+version = "0.1.0"
+edition = "2018"
+resolver = "2"
+
+[dependencies]
+anyhow = "1.0.43"
+bytemuck = { version = "1.7.2", features = ["derive"] }
+cgmath = "0.18.0"
+env_logger = "0.9.0"
+image = "0.23.14"
+lazy_static = "1.4.0"
+pollster = "0.2.4"
+wgpu = "0.10.1"
+winit = "0.25.0"
