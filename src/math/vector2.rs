@@ -13,3 +13,23 @@ impl Vector2 {
         Self { x, y }
     }
 }
+
+impl std::ops::Add<Vector2> for Vector2 {
+    type Output = Self;
+
+    fn add(mut self, rhs: Vector2) -> Self::Output {
+        self.x += rhs.x;
+        self.y += rhs.y;
+        self
+    }
+}
+
+impl std::ops::Mul<f32> for Vector2 {
+    type Output = Self;
+
+    fn mul(mut self, rhs: f32) -> Self::Output {
+        self.x *= rhs;
+        self.y *= rhs;
+        self
+    }
+}

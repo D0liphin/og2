@@ -10,22 +10,31 @@ struct Player {
 }
 
 impl oge::Script for Player {
-    fn start(oge: &Oge) -> Self {
+    fn init(oge: &Oge) -> Self {
         let sprite = oge::Sprite::new(oge::SpriteConfiguration {
             label: "player_idle",
-            mesh: oge::Mesh::new_rectangle(16.0, 16.0),
-            texture: oge::Texture::new(oge::TextureConfiguration {
+            mesh: oge::SpriteMesh::new_rectangle(0.5, 0.5),
+            texture: oge.create_texture(&oge::TextureConfiguration {
                 path: PathBuf::new("./images/player_idle.png"),
+                projection_method: oge::TextureProjectionMethod::ScaleToFit,
             })
         });
-        oge.include_sprite_in_render(&sprite);
 
         Self {
             sprite,
             velocity: oge::Vector2::new(0.0, 0.0), 
         }
     }
+
+    fn update(&mut self, oge: &Oge) {
+        self.velocity.y += oge.delta_time() * 9.8;
+        self.sprite.translate(self.velocity);
+
+        oge.render_sprites(std::iter::once(&self.sprite));
+    }
 }
 
-include_scripts![Player];
+fn main() {
+
+}
 ```

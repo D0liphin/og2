@@ -20,9 +20,12 @@ impl Matrix3x2 {
 
 // pub static
 impl Matrix3x2 {
-    /// Creates a matrix that represents the composition of `a` and `b` (`a` ◦ `b`).
-    pub fn compose(a: Self, b: Self) -> Self {
-        todo!()
+    /// Creates a matrix that represents the composition of `lhs` and `rhs` (`lhs` ◦ `rhs`).
+    pub fn compose(lhs: &Self, rhs: &Self) -> Self {
+        let i = Vector2::new(lhs.i.x, lhs.i.y) * rhs.i.x + Vector2::new(lhs.j.x, lhs.j.y) * rhs.i.y;
+        let j = Vector2::new(lhs.i.x, lhs.i.y) * rhs.j.x + Vector2::new(lhs.j.x, lhs.j.y) * rhs.j.y;
+        let k = Vector2::new(lhs.k.x + rhs.k.x, lhs.k.y + rhs.k.y);
+        Self { i, j, k }
     }
 }
 
