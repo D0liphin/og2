@@ -14,3 +14,6 @@ lazy_static = "1.4.0"
 pollster = "0.2.4"
 wgpu = "0.10.1"
 winit = "0.25.0"
+
+[profile.release]
+incremental = true

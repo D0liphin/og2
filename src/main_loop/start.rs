@@ -26,7 +26,7 @@ fn build_window() -> (EventLoop<()>, Window) {
     (event_loop, window)
 }
 
-pub fn start<const SCRIPT_COUNT: usize>(scripts: [fn(&Oge) -> Box<dyn DynScript>; SCRIPT_COUNT]) {
+pub fn start<const SCRIPT_COUNT: usize>(scripts: [fn(&mut Oge) -> Box<dyn DynScript>; SCRIPT_COUNT]) {
     let (event_loop, window) = build_window();
     env_logger::init();
 
@@ -35,7 +35,7 @@ pub fn start<const SCRIPT_COUNT: usize>(scripts: [fn(&Oge) -> Box<dyn DynScript>
         render_state: RenderState::new(&window),
     };
 
-    let mut scripts = scripts.map(|get_script| get_script(&oge));
+    let mut scripts = scripts.map(|get_script| get_script(&mut oge));
 
     event_loop.run(move |event, _, control_flow| {
         match event {
@@ -58,12 +58,17 @@ pub fn start<const SCRIPT_COUNT: usize>(scripts: [fn(&Oge) -> Box<dyn DynScript>
                 }
 
                 WindowEvent::Resized(physical_size) => {
-                    oge.render_state.resize(&WindowDimensions::from(physical_size));
+                    oge.resize(WindowDimensions::from(physical_size));
+                    for script in scripts.iter_mut() {
+                        script.window_resize(&mut oge);
+                    }
                 }
 
                 WindowEvent::ScaleFactorChanged { new_inner_size, .. } => {
-                    // new_inner_size is &mut so w have to dereference it twice
-                    oge.render_state.resize(&WindowDimensions::from(&**new_inner_size));
+                    oge.resize(WindowDimensions::from(&**new_inner_size));
+                    for script in scripts.iter_mut() {
+                        script.window_resize(&mut oge);
+                    }
                 }
 
                 _ => {}
@@ -71,7 +76,7 @@ pub fn start<const SCRIPT_COUNT: usize>(scripts: [fn(&Oge) -> Box<dyn DynScript>
 
             Event::RedrawRequested(_) => {
                 for script in scripts.iter_mut() {
-                    script.update(&oge);
+                    script.update(&mut oge);
                 }
             }
 

@@ -25,7 +25,8 @@ impl Matrix3x2 {
         let i = Vector2::new(lhs.i.x, lhs.i.y) * rhs.i.x + Vector2::new(lhs.j.x, lhs.j.y) * rhs.i.y;
         let j = Vector2::new(lhs.i.x, lhs.i.y) * rhs.j.x + Vector2::new(lhs.j.x, lhs.j.y) * rhs.j.y;
         let k = Vector2::new(lhs.k.x + rhs.k.x, lhs.k.y + rhs.k.y);
-        Self { i, j, k }
+        let mat = Self { i, j, k };
+        mat
     }
 }
 

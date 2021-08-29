@@ -175,7 +175,10 @@ impl DeviceWrapper {
                         format: self.preferred_texture_format,
                         blend: Some(wgpu::BlendState {
                             color: wgpu::BlendComponent {
-                                src_factor: wgpu::BlendFactor::SrcAlpha,
+                                // Describes some equation: 
+                                // src * src_factor <op> dst * dst_factor
+                                // src_factor * src_color <operation> dst_color * dst_alpha * dst_factor
+                                src_factor: wgpu::BlendFactor::SrcAlpha, 
                                 dst_factor: wgpu::BlendFactor::OneMinusSrcAlpha,
                                 operation: wgpu::BlendOperation::Add,
                             },

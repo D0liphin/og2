@@ -10,47 +10,16 @@ lazy_static! {
         PathBuf::from("/home/oli/Documents/Coding/Rust/Projects/og2/examples/");
 }
 
-struct FpsCounter {
-    last_update_time_stamp: Instant,
-    last_fps_update_time_stamp: Instant,
-}
-
-impl Script for FpsCounter {
-    fn start(oge: &oge::Oge) -> Self {
-        FpsCounter {
-            last_update_time_stamp: Instant::now(),
-            last_fps_update_time_stamp: Instant::now(),
-        }
-    }
-
-    fn update(&mut self, oge: &oge::Oge) {
-        let now = Instant::now();
-
-        if now.duration_since(self.last_fps_update_time_stamp) > Duration::new(0, 200_000_000) {
-            self.last_fps_update_time_stamp = now;
-            let delta_time = now.duration_since(self.last_update_time_stamp).as_micros() as f64;
-            let updates_per_second = 1_000_000.0 / delta_time;
-            print!("{: >10}fps\r", updates_per_second.round());
-            use std::io::Write;
-            std::io::stdout().flush().unwrap();
-        }
-
-        self.last_update_time_stamp = now;
-    }
-}
-
-struct GameCharacter {
-    last_update_time_stamp: Instant,
+struct Tree {
     sprite: oge::Sprite,
 }
 
-impl Script for GameCharacter {
-    fn start(oge: &Oge) -> Self {
-        Self {
-            last_update_time_stamp: Instant::now(),
+impl Script for Tree {
+    fn start(oge: &mut Oge) -> Self {
+        Tree {
             sprite: oge::Sprite::new(oge::SpriteConfiguration {
-                label: Some("Game Character"),
-                mesh: oge::SpriteMesh::new_rectangle(0.9, 0.9),
+                label: Some("Tree"),
+                mesh: oge::SpriteMesh::new_rectangle(20.0, 20.0),
                 texture: oge.create_texture(&oge::TextureConfiguration {
                     path: IMAGE_DIR.clone().join("tree.png"),
                     projection_method: oge::TextureProjectionMethod::ScaleToFit,
@@ -59,23 +28,23 @@ impl Script for GameCharacter {
         }
     }
 
-    fn update(&mut self, oge: &Oge) {
-        let now = Instant::now();
-        let delta_time =
-            now.duration_since(self.last_update_time_stamp).as_millis() as f32 / 1000.0;
-        self.last_update_time_stamp = now;
-
-        let rotation: f32 = std::f32::consts::PI * delta_time;
-        self.sprite.transform(&oge::Matrix3x2 {
-            i: oge::Vector2::new(rotation.cos(), -rotation.sin()),
-            j: oge::Vector2::new(rotation.sin(), rotation.cos()),
-            k: oge::Vector2::new(0.0, 0.0),
-        });
-
+    fn update(&mut self, oge: &mut Oge) {
         oge.render_sprites(std::iter::once(&self.sprite));
+    }
+
+    fn window_resize(&mut self, oge: &mut Oge) {
+        let window_dimensions = oge.window_dimensions();
+        let (x, y) = (
+            window_dimensions.width as f32 * 0.02,
+            window_dimensions.height as f32 * 0.02,
+        );
+        oge.set_window_bounds(oge::Bounds {
+            bottom_left: oge::Vector2::new(-x, -y),
+            top_right: oge::Vector2::new(x, y),
+        })
     }
 }
 
 fn main() {
-    oge::start([FpsCounter::load_script, GameCharacter::load_script]);
+    oge::main_loop::start([Tree::load_script()]);
 }

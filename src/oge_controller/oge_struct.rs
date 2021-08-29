@@ -32,4 +32,23 @@ impl Oge {
         }
         // done!
     }
+
+    /// Sets the region of the coordinate system that should be displayed to the window.
+    /// It is your responsibilty to ensure that this region has the same aspect ratio as the
+    /// window.
+    pub fn set_window_bounds(&mut self, bounds: Bounds) {
+        self.window_handler.set_viewable_region(bounds);
+    }
+
+    /// Returns the dimensions of the window 
+    pub fn window_dimensions(&self) -> WindowDimensions {
+        self.window_handler.dimensions
+    }
+}
+
+impl Oge {
+    pub(crate) fn resize(&mut self, window_dimensions: WindowDimensions) {
+        self.render_state.resize(&window_dimensions);
+        self.window_handler.dimensions = window_dimensions;
+    }
 }
