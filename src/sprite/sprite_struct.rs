@@ -37,7 +37,11 @@ impl Sprite {
         }
     }
 
-    pub fn transform(&mut self, matrix: &Matrix3x2) {
-        self.mesh.matrix = Matrix3x2::compose(&self.mesh.matrix, matrix);
+    /// Apply a 2x2 linear transformation to this sprite
+    pub fn transform(&mut self, matrix: &Matrix2x2) {
+        self.mesh.matrix = Matrix3x2::compose(
+            &self.mesh.matrix,
+            &Matrix3x2::new(matrix.i, matrix.j, Vector2::new(0.0, 0.0)),
+        );
     }
 }

@@ -3,6 +3,8 @@ use crate::*;
 pub struct Oge {
     pub(crate) window_handler: WindowHandler,
     pub(crate) render_state: RenderState,
+    pub(crate) input_handler: InputHandler,
+    pub(crate) meta_handler: MetaHandler,
 }
 
 impl Oge {
@@ -43,6 +45,58 @@ impl Oge {
     /// Returns the dimensions of the window 
     pub fn window_dimensions(&self) -> WindowDimensions {
         self.window_handler.dimensions
+    }
+
+    /// Returns the `ButtonStatus` of the key with this key code.
+    pub fn get_key_status(&self, key_code: KeyCode) -> ButtonStatus {
+        self.input_handler.get_key_status(key_code as u8)
+    }
+
+    /// Returns `true` if the key with the key code `key_code` is pressed, and 
+    /// `false` if it is not. This is faster than using `Oge::get_key_status(&self, key_code: KeyCode)`
+    pub fn get_key_down(&self, key_code: KeyCode) -> bool {
+        self.input_handler.get_key_down(key_code as u8)
+    }
+
+    /// Returns the `ButtonStatus` of the mouse button with the provided `MouseButtonCode`
+    pub fn get_mouse_button_status(&self, mouse_button_code: MouseButtonCode) -> ButtonStatus {
+        self.input_handler.get_mouse_button_status(mouse_button_code as u8)
+    }
+
+    /// Returns `true` if the mouse button with the given `MouseButtonCode` is pressed,
+    /// and false if it s not
+    pub fn get_mouse_button_down(&self, mouse_button_code: MouseButtonCode) -> bool {
+        self.input_handler.get_mouse_button_down(mouse_button_code as u8)
+    }
+
+    /// Returns the time, in seconds between the start of the previous update cycle
+    /// and the start of the current update cycle.
+    /// 
+    /// ```
+    ///          frame
+    ///          before          prev
+    ///          last            frame
+    ///          presented       presented
+    ///            │              │
+    ///            │        ┌─────┴────
+    ///            │        │
+    ///     ┌──────┴────────┤
+    ///     │               │  
+    ///     ─────────────────────────────► time
+    ///     ▲      ▲    ▲   ▲  ▲     ▲
+    ///     │      │    │   │  │     │
+    ///     prev   │  prev  │ current│
+    ///     update │  render│ update │
+    ///     cycle  │  cycle │ cycle  │
+    ///     start  │  start │ start  │
+    ///            │        │        │
+    ///            prev    prev      current
+    ///            update  render    update
+    ///            cycle   cycle     cycle
+    ///            end     end       end
+    /// ```
+    pub fn delta_time(&self) -> f32 {
+        self.meta_handler.delta_time()
     }
 }
 

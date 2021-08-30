@@ -1,2 +1,1 @@
-pub mod key_codes;
-usemod![pub input_handler];
+usemod![pub key_codes, pub input_handler];

@@ -19,6 +19,7 @@ impl DeviceWrapper {
         let adapter = instance
             .request_adapter(&wgpu::RequestAdapterOptions {
                 compatible_surface: Some(&surface),
+                power_preference: wgpu::PowerPreference::HighPerformance,
                 ..Default::default()
             })
             .await
@@ -38,7 +39,7 @@ impl DeviceWrapper {
             format: preferred_texture_format,
             width: init_size.width,
             height: init_size.height,
-            present_mode: wgpu::PresentMode::Mailbox,
+            present_mode: wgpu::PresentMode::Fifo,
         };
         surface.configure(&device, &surface_configuration);
 
@@ -200,7 +201,10 @@ impl DeviceWrapper {
                     ..Default::default()
                 },
                 depth_stencil: None,
-                multisample: wgpu::MultisampleState::default(),
+                multisample: wgpu::MultisampleState {
+                    count: 1,
+                    ..Default::default()
+                },
             })
     }
 

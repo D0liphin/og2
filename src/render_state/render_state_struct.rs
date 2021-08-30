@@ -89,43 +89,68 @@ impl RenderState {
                 usage: wgpu::TextureUsages::TEXTURE_BINDING | wgpu::TextureUsages::COPY_DST,
             });
 
-        {
-            use wgpu::util::DeviceExt;
-            let buffer =
-                self.device_wrapper
-                    .device
-                    .create_buffer_init(&wgpu::util::BufferInitDescriptor {
-                        label: None,
-                        contents: &image_buffer,
-                        usage: wgpu::BufferUsages::COPY_SRC,
-                    });
+        self.queue.write_texture(
+            wgpu::ImageCopyTexture {
+                texture: &texture,
+                mip_level: 0,
+                origin: wgpu::Origin3d::ZERO,
+                aspect: wgpu::TextureAspect::All,
+            },
+            image_buffer,
+            wgpu::ImageDataLayout {
+                offset: 0,
+                // This is safe since we checked earlier if this is (0, 0)
+                bytes_per_row: Some(unsafe {
+                    std::num::NonZeroU32::new_unchecked(
+                        dimensions.0 << 2
+                    )
+                }),
+                rows_per_image: Some(unsafe {
+                    std::num::NonZeroU32::new_unchecked(dimensions.1)
+                }),
+            },
+            texture_extent_3d,
+        );
 
-            let mut command_encoder = self.device_wrapper.create_command_encoder();
-            command_encoder.copy_buffer_to_texture(
-                wgpu::ImageCopyBuffer {
-                    buffer: &buffer,
-                    layout: wgpu::ImageDataLayout {
-                        offset: 0,
-                        // This is safe since we checked earlier if this is (0, 0)
-                        bytes_per_row: Some(unsafe {
-                            std::num::NonZeroU32::new_unchecked(4 * dimensions.0)
-                        }),
-                        rows_per_image: Some(unsafe {
-                            std::num::NonZeroU32::new_unchecked(dimensions.1)
-                        }),
-                    },
-                },
-                wgpu::ImageCopyTexture {
-                    texture: &texture,
-                    mip_level: 0,
-                    origin: wgpu::Origin3d::ZERO,
-                    aspect: wgpu::TextureAspect::All,
-                },
-                texture_extent_3d,
-            );
+        // {
+        //     use wgpu::util::DeviceExt;
+        //     let buffer =
+        //         self.device_wrapper
+        //             .device
+        //             .create_buffer_init(&wgpu::util::BufferInitDescriptor {
+        //                 label: None,
+        //                 contents: &image_buffer,
+        //                 usage: wgpu::BufferUsages::COPY_SRC,
+        //             });
 
-            self.queue.submit(std::iter::once(command_encoder.finish()));
-        }
+        //     let mut command_encoder = self.device_wrapper.create_command_encoder();
+        //     command_encoder.copy_buffer_to_texture(
+        //         wgpu::ImageCopyBuffer {
+        //             buffer: &buffer,
+        //             layout: wgpu::ImageDataLayout {
+        //                 offset: 0,
+        //                 // This is safe since we checked earlier if this is (0, 0)
+        //                 bytes_per_row: Some(unsafe {
+        //                     std::num::NonZeroU32::new_unchecked(
+        //                         (dimensions.0 + dimensions.0 % 64) << 2,
+        //                     )
+        //                 }),
+        //                 rows_per_image: Some(unsafe {
+        //                     std::num::NonZeroU32::new_unchecked(dimensions.1)
+        //                 }),
+        //             },
+        //         },
+        //         wgpu::ImageCopyTexture {
+        //             texture: &texture,
+        //             mip_level: 0,
+        //             origin: wgpu::Origin3d::ZERO,
+        //             aspect: wgpu::TextureAspect::All,
+        //         },
+        //         texture_extent_3d,
+        //     );
+
+        //     self.queue.submit(std::iter::once(command_encoder.finish()));
+        // }
 
         texture
     }
@@ -141,11 +166,7 @@ impl RenderState {
             .configure(&self.device_wrapper.device, &self.surface_configuration)
     }
 
-    pub(crate) fn render(
-        &self,
-        render_target: &wgpu::TextureView,
-        render_bundle: RenderBundle,
-    ) {
+    pub(crate) fn render(&self, render_target: &wgpu::TextureView, render_bundle: RenderBundle) {
         let mut command_encoder = self.device_wrapper.create_command_encoder();
 
         let bind_group = self.device_wrapper.create_texture_bind_group(
@@ -183,7 +204,11 @@ impl RenderState {
             render_pass.set_bind_group(0, &bind_group, &[]);
             render_pass.set_vertex_buffer(0, vertex_buffer.slice(..));
             render_pass.set_index_buffer(index_buffer.slice(..), wgpu::IndexFormat::Uint16);
-            render_pass.draw_indexed(0..(render_bundle.index_buffer_contents.len() >> 1) as u32, 0, 0..1);
+            render_pass.draw_indexed(
+                0..(render_bundle.index_buffer_contents.len() >> 1) as u32,
+                0,
+                0..1,
+            );
         }
 
         self.queue.submit(std::iter::once(command_encoder.finish()));
