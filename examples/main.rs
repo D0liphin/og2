@@ -21,7 +21,7 @@ impl Script for Car {
                 label: Some("Car"),
                 mesh: oge::SpriteMesh::new_rectangle(150.0, 150.0),
                 texture: oge.create_texture(&oge::TextureConfiguration {
-                    path: IMAGE_DIR.clone().join("car.png"),
+                    path: IMAGE_DIR.clone().join("tree.png"),
                     projection_method: oge::TextureProjectionMethod::ScaleToFit,
                 }),
             }),
@@ -30,10 +30,12 @@ impl Script for Car {
 
     fn update(&mut self, oge: &mut Oge) {
         if oge.get_key_down(oge::KeyCode::Right) {
-            self.sprite.transform(&oge::Matrix2x2::rotation(1.0 * oge.delta_time()))
+            self.sprite
+                .transform(&oge::Matrix2x2::rotation(1.0 * oge.delta_time()))
         }
         if oge.get_key_down(oge::KeyCode::Left) {
-            self.sprite.transform(&oge::Matrix2x2::rotation(-1.0 * oge.delta_time()))
+            self.sprite
+                .transform(&oge::Matrix2x2::rotation(-1.0 * oge.delta_time()))
         }
     }
 
@@ -51,7 +53,7 @@ impl Script for Car {
             bottom_left: oge::Vector2::new(-x, -y),
             top_right: oge::Vector2::new(x, y),
         })
-    } 
+    }
 }
 
 fn main() {
