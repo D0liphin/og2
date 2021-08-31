@@ -58,18 +58,27 @@ impl RenderState {
         &self,
         label: Option<&str>,
         dynamic_image: image::DynamicImage,
-    ) -> wgpu::Texture {
+    ) -> Result<wgpu::Texture, OgeError> {
         use image::GenericImageView;
 
         let image_buffer = dynamic_image
             .as_rgba8()
-            .expect(&format!("Image {:?} is not of the correct format", label));
+            .ok_or(crate::TextureError::format(label))?;
 
         let dimensions = dynamic_image.dimensions();
         if dimensions == (0, 0) {
             panic!("Image dimensions must be at least (1, 1)");
         }
 
+        self.create_image_texture_from_buffer(label, image_buffer, dimensions)
+    }
+
+    pub(crate) fn create_image_texture_from_buffer(
+        &self,
+        label: Option<&str>,
+        image_buffer: &[u8],
+        dimensions: (u32, u32),
+    ) -> Result<wgpu::Texture, OgeError> {
         let texture_extent_3d = wgpu::Extent3d {
             width: dimensions.0,
             height: dimensions.1,
@@ -101,58 +110,14 @@ impl RenderState {
                 offset: 0,
                 // This is safe since we checked earlier if this is (0, 0)
                 bytes_per_row: Some(unsafe {
-                    std::num::NonZeroU32::new_unchecked(
-                        dimensions.0 << 2
-                    )
+                    std::num::NonZeroU32::new_unchecked(dimensions.0 << 2)
                 }),
-                rows_per_image: Some(unsafe {
-                    std::num::NonZeroU32::new_unchecked(dimensions.1)
-                }),
+                rows_per_image: Some(unsafe { std::num::NonZeroU32::new_unchecked(dimensions.1) }),
             },
             texture_extent_3d,
         );
 
-        // {
-        //     use wgpu::util::DeviceExt;
-        //     let buffer =
-        //         self.device_wrapper
-        //             .device
-        //             .create_buffer_init(&wgpu::util::BufferInitDescriptor {
-        //                 label: None,
-        //                 contents: &image_buffer,
-        //                 usage: wgpu::BufferUsages::COPY_SRC,
-        //             });
-
-        //     let mut command_encoder = self.device_wrapper.create_command_encoder();
-        //     command_encoder.copy_buffer_to_texture(
-        //         wgpu::ImageCopyBuffer {
-        //             buffer: &buffer,
-        //             layout: wgpu::ImageDataLayout {
-        //                 offset: 0,
-        //                 // This is safe since we checked earlier if this is (0, 0)
-        //                 bytes_per_row: Some(unsafe {
-        //                     std::num::NonZeroU32::new_unchecked(
-        //                         (dimensions.0 + dimensions.0 % 64) << 2,
-        //                     )
-        //                 }),
-        //                 rows_per_image: Some(unsafe {
-        //                     std::num::NonZeroU32::new_unchecked(dimensions.1)
-        //                 }),
-        //             },
-        //         },
-        //         wgpu::ImageCopyTexture {
-        //             texture: &texture,
-        //             mip_level: 0,
-        //             origin: wgpu::Origin3d::ZERO,
-        //             aspect: wgpu::TextureAspect::All,
-        //         },
-        //         texture_extent_3d,
-        //     );
-
-        //     self.queue.submit(std::iter::once(command_encoder.finish()));
-        // }
-
-        texture
+        Ok(texture)
     }
 
     pub(crate) fn resize(&mut self, new_size: &crate::WindowDimensions) {

@@ -49,7 +49,7 @@ impl DeviceWrapper {
             Self {
                 device,
                 texture_bind_group_layout,
-                preferred_texture_format, 
+                preferred_texture_format,
             },
             surface,
             surface_configuration,
@@ -176,17 +176,17 @@ impl DeviceWrapper {
                         format: self.preferred_texture_format,
                         blend: Some(wgpu::BlendState {
                             color: wgpu::BlendComponent {
-                                // Describes some equation: 
+                                // Describes some equation:
                                 // src * src_factor <op> dst * dst_factor
                                 // src_factor * src_color <operation> dst_color * dst_alpha * dst_factor
-                                src_factor: wgpu::BlendFactor::SrcAlpha, 
+                                src_factor: wgpu::BlendFactor::SrcAlpha,
                                 dst_factor: wgpu::BlendFactor::OneMinusSrcAlpha,
                                 operation: wgpu::BlendOperation::Add,
                             },
-                            alpha: wgpu::BlendComponent  {
+                            alpha: wgpu::BlendComponent {
                                 src_factor: wgpu::BlendFactor::One,
                                 dst_factor: wgpu::BlendFactor::One,
-                                operation: wgpu::BlendOperation::Add,                 
+                                operation: wgpu::BlendOperation::Add,
                             },
                         }),
                         write_mask: wgpu::ColorWrites::ALL,
@@ -233,10 +233,18 @@ impl DeviceWrapper {
             })
     }
 
-    pub(crate) fn create_sampler(&self) -> wgpu::Sampler {
-        self.device
-            .create_sampler(&wgpu::SamplerDescriptor {
-                ..Default::default()
-            })
+    pub(crate) fn create_sampler(
+        &self,
+        filter_mode: wgpu::FilterMode,
+        address_mode: wgpu::AddressMode,
+    ) -> wgpu::Sampler {
+        self.device.create_sampler(&wgpu::SamplerDescriptor {
+            address_mode_u: address_mode,
+            address_mode_v: address_mode,
+            address_mode_w: address_mode,
+            mag_filter: filter_mode,
+            min_filter: filter_mode,
+            ..Default::default()
+        })
     }
 }

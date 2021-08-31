@@ -84,10 +84,13 @@ impl Script for Car {
             sprite: oge::Sprite::new(oge::SpriteConfiguration {
                 label: Some("Car"),
                 mesh: oge::SpriteMesh::new_rectangle(64.0, 64.0),
-                texture: oge.create_texture(&oge::TextureConfiguration {
-                    path: IMAGE_DIR.clone().join("tree.png"),
-                    projection_method: oge::TextureProjectionMethod::ScaleToFit,
-                }),
+                texture: oge
+                    .create_texture(&oge::TextureConfiguration {
+                        source: oge::TextureSource::Bytes(include_bytes!("./car.png")),
+                        filter_mode: oge::FilterMode::Point,
+                        ..Default::default()
+                    })
+                    .unwrap(),
             }),
             position: oge::Vector2::new(0.0, 0.0),
             velocity: oge::Vector2::new(0.0, 0.0),
@@ -98,66 +101,73 @@ impl Script for Car {
     }
 
     fn update(&mut self, oge: &mut Oge) {
-        // let cursor_position = oge.get_real_position(oge.cursor_position());
-        // let direction_vector = oge::Vector2::new_euclidean(self.angle, 1.0);
-        // let car_cursor_angle =
-        //     oge::Vector2::angle_between(&direction_vector, &(cursor_position.sub(&self.position)));
+        printfl!(
+            "{: >12?} {: >12?}\r",
+            oge.cursor_position(),
+            oge.get_real_position(oge.cursor_position())
+        );
 
-        // if self.speed > 5.0 {
-        //     if car_cursor_angle.is_sign_positive() {
-        //         self.torque += oge.delta_time() * 0.2 * car_cursor_angle.powi(2);
-        //         if self.torque > 0.15 {
-        //             self.torque = 0.15;
-        //         }
-        //     } else {
-        //         self.torque -= oge.delta_time() * 0.2 * car_cursor_angle.powi(2);
-        //         if self.torque < -0.15 {
-        //             self.torque = -0.15;
-        //         }
-        //     }
-        // }
-        // self.torque *= oge.delta_time() * -5.0 * self.torque + 0.95;
-        // self.angle += self.torque
-        //     * if self.speed < 200.0 {
-        //         0.005 * self.speed
-        //     } else {
-        //         1.0
-        //     };
+        let cursor_position = oge.get_real_position(oge.cursor_position());
+        let direction_vector = oge::Vector2::new_euclidean(self.angle, 1.0);
+        let car_cursor_angle =
+            oge::Vector2::angle_between(&direction_vector, &(cursor_position.sub(&self.position)));
 
-        // if oge.get_mouse_button_down(oge::MouseButtonCode::Left) {
-        //     let distance = (self.speed + 20.0)
-        //         * 0.001
-        //         * self.position.distance_to(&cursor_position);
-        //     let distance = if distance > 20.0 { 20.0 } else { distance };
-        //     self.speed += distance;
+        if self.speed > 5.0 {
+            if car_cursor_angle.is_sign_positive() {
+                self.torque += oge.delta_time() * 0.2 * car_cursor_angle.powi(2);
+                if self.torque > 0.15 {
+                    self.torque = 0.15;
+                }
+            } else {
+                self.torque -= oge.delta_time() * 0.2 * car_cursor_angle.powi(2);
+                if self.torque < -0.15 {
+                    self.torque = -0.15;
+                }
+            }
+        }
+        self.torque *= oge.delta_time() * -5.0 * self.torque + 0.95;
+        self.angle += self.torque
+            * if self.speed < 200.0 {
+                0.005 * self.speed
+            } else {
+                1.0
+            };
 
-        //     let max_speed = distance * 10.0;
+        if oge.get_mouse_button_down(oge::MouseButtonCode::Left) {
+            let distance =
+                (self.speed + 20.0) * 0.001 * self.position.distance_to(&cursor_position);
+            let distance = if distance > 20.0 { 20.0 } else { distance };
+            self.speed += distance;
 
-        //     if self.speed > max_speed {
-        //         self.speed -= distance;
-        //         if self.speed < max_speed {
-        //             self.speed = max_speed;
-        //         }
-        //     }
-        // } else {
-        //     self.speed -= 300.0 * self.torque.abs();
-        //     if self.speed < 0.0 {
-        //         self.speed = 0.0;
-        //     }
-        // }
+            let max_speed = distance * 10.0;
 
-        // self.velocity.scale_assign(0.95);
-        // self.velocity.add_assign(&direction_vector.scale(self.speed));
-        // let velocity_magnitude = self.velocity.magnitude();
-        // if velocity_magnitude > 800.0 {
-        //     self.velocity.scale_assign(800.0 / velocity_magnitude);
-        // }
+            if self.speed > max_speed {
+                self.speed -= distance;
+                if self.speed < max_speed {
+                    self.speed = max_speed;
+                }
+            }
+        } else {
+            self.speed -= 300.0 * self.torque.abs();
+            if self.speed < 0.0 {
+                self.speed = 0.0;
+            }
+        }
 
-        // self.position.add_assign(&self.velocity.scale(oge.delta_time()));
+        self.velocity.scale_assign(0.95);
+        self.velocity
+            .add_assign(&direction_vector.scale(self.speed));
+        let velocity_magnitude = self.velocity.magnitude();
+        if velocity_magnitude > 800.0 {
+            self.velocity.scale_assign(800.0 / velocity_magnitude);
+        }
 
-        // self.sprite
-        //     .set_transformation(oge::Matrix2::rotation(self.angle));
-        // self.sprite.set_position(self.position);
+        self.position
+            .add_assign(&self.velocity.scale(oge.delta_time()));
+
+        self.sprite
+            .set_transformation(oge::Matrix2::rotation(self.angle));
+        self.sprite.set_position(self.position);
     }
 
     fn render(&self, oge: &mut Oge) {

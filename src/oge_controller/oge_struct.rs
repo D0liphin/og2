@@ -8,7 +8,7 @@ pub struct Oge {
 }
 
 impl Oge {
-    pub fn create_texture(&self, config: &TextureConfiguration) -> Texture {
+    pub fn create_texture(&self, config: &TextureConfiguration) -> Result<Texture, OgeError> {
         Texture::new(&self.render_state, &config)
     }
 
@@ -35,7 +35,6 @@ impl Oge {
                     render_bundle_affine2.reverse_compose(&self.window_handler.affine2);
 
                 render_bundle.affine2 = &render_bundle_affine2;
-                println!("{:#?}", render_bundle);
                 self.render_state
                     .render(&surface_texture_view, render_bundle);
             }
@@ -95,7 +94,7 @@ impl Oge {
     /// Converts a physical position to the specified coordinate system
     pub fn get_real_position(&self, physical_position: Vector2) -> Vector2 {
         let real_position = physical_position.mul(&self.window_handler.reverse_affine2.matrix2);
-        real_position.add(&self.window_handler.affine2.translation)
+        real_position.add(&self.window_handler.reverse_affine2.translation)
     }
 
     /// Returns a mutable reference to the component with the provided type

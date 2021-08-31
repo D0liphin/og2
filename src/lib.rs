@@ -16,6 +16,7 @@ usemod![
     pub oge_controller,
     pub physics,
     pub sprite,
+    pub error,
     pub(crate) render_state,
     pub(crate) util,
 ];
