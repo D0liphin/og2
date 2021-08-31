@@ -1,6 +1,6 @@
 usemod![
-    pub matrix2x2,
-    pub matrix3x2,
+    pub matrix2,
+    pub affine2,
     pub vector2,
     pub(crate) mesh,
 ];

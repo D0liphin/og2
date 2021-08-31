@@ -12,7 +12,7 @@ pub(crate) struct VertexInput {
 pub struct SpriteMesh {
     pub(crate) vertices: Vec<VertexInput>,
     pub(crate) indices: Vec<u16>,
-    pub(crate) matrix: Matrix3x2,
+    pub(crate) affine2: Affine2,
 }
 
 impl SpriteMesh {
@@ -39,14 +39,11 @@ impl SpriteMesh {
                 },
             ],
             indices: vec![0, 1, 2, 0, 2, 3, /* padding */ 0, 0],
-            matrix: Matrix3x2 {
-                i: Vector2::new(1.0, 0.0),
-                j: Vector2::new(0.0, 1.0),
-                k: Vector2::new(0.0, 0.0),
-            },
+            affine2: Affine2::default(),
         }
     }
 
+    /// Return the bounding box that encapsulates this sprite
     pub fn bounds(&self) -> Bounds {
         let mut min = Vector2::new(f32::MAX, f32::MAX);
         let mut max = Vector2::new(f32::MIN, f32::MIN);

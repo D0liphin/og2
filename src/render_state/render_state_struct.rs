@@ -172,7 +172,7 @@ impl RenderState {
         let bind_group = self.device_wrapper.create_texture_bind_group(
             &render_bundle.texture_view,
             &render_bundle.sampler,
-            &render_bundle.matrix.create_raw_buffer(),
+            &render_bundle.affine2.create_raw_buffer(),
         );
         let vertex_buffer = self
             .device_wrapper

@@ -19,26 +19,18 @@ impl From<&winit::dpi::PhysicalSize<u32>> for WindowDimensions {
 pub struct WindowHandler {
     /// The dimensions of this window
     pub(crate) dimensions: WindowDimensions,
-    /// The matrix that is used to transform points into normalized device coordinates
-    pub(crate) matrix: crate::Matrix3x2,
-    /// Matrix used to convert a physical position to a viewable region point
-    pub(crate) reverse_matrix: crate::Matrix3x2,
+    /// The affine matrix that is used to transform points into normalized device coordinates
+    pub(crate) affine2: Affine2,
+    /// Affine matrix used to convert a physical position to a viewable region point
+    pub(crate) reverse_affine2: Affine2,
 }
 
 impl WindowHandler {
     pub(crate) fn new(window: &winit::window::Window) -> Self {
         Self {
             dimensions: WindowDimensions::from(&window.inner_size()),
-            matrix: Matrix3x2::new(
-                Vector2::new(1.0, 0.0),
-                Vector2::new(0.0, 1.0),
-                Vector2::new(0.0, 0.0),
-            ),
-            reverse_matrix: Matrix3x2::new(
-                Vector2::new(1.0, 0.0),
-                Vector2::new(0.0, 1.0),
-                Vector2::new(0.0, 0.0),
-            ),
+            affine2: Affine2::default(),
+            reverse_affine2: Affine2::default(),
         }
     }
 
@@ -47,17 +39,26 @@ impl WindowHandler {
         let height = bounds.height();
         let frac_width_2 = width * 0.5;
         let frac_height_2 = height * 0.5;
-        let center = bounds.bottom_left + Vector2::new(frac_width_2, frac_height_2);
+        let center = bounds
+            .bottom_left
+            .add(&Vector2::new(frac_width_2, frac_height_2));
 
-        self.matrix.i = Vector2::new(2.0 / width, 0.0);
-        self.matrix.j = Vector2::new(0.0, 2.0 / height);
-        self.matrix.k = Vector2::new(-center.x, -center.y);
+        self.affine2 = Affine2 {
+            matrix2: Matrix2 {
+                i: Vector2::new(2.0 / width, 0.0),
+                j: Vector2::new(0.0, 2.0 / height),
+            },
+            translation: Vector2::new(-center.x, -center.y),
+        };
 
         let (window_width, window_height) =
             (self.dimensions.width as f32, self.dimensions.height as f32);
-            
-        self.reverse_matrix.i = Vector2::new(width / window_width, 0.0);
-        self.reverse_matrix.j = Vector2::new(0.0, -height / window_height);
-        self.reverse_matrix.k = Vector2::new(-frac_width_2, frac_height_2);
+        self.reverse_affine2 = Affine2 {
+            matrix2:  Matrix2 {
+                i: Vector2::new(width / window_width, 0.0),
+                j: Vector2::new(0.0, -height / window_height),
+            },
+            translation: Vector2::new(-frac_width_2, frac_height_2),
+        }
     }
 }

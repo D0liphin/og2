@@ -13,15 +13,30 @@ pub struct Vector2 {
 
 // pub instance
 impl Vector2 {
-    /// Shorthand creation
+    /// Creates a new cartesian vector with the given unit vector scalars.
     pub const fn new(x: f32, y: f32) -> Self {
         Self { x, y }
     }
 
+    /// Vector2 { x: 0., y: -0. }
+    pub const ZERO: Vector2 = Vector2 { x: 0., y: -0. };
+
+    /// Vector2 { x: 0., y: -1. }
+    pub const DOWN: Vector2 = Vector2 { x: 0., y: -1. };
+
+    /// Vector2 { x: -1., y: 0. }
+    pub const LEFT: Vector2 = Vector2 { x: -1., y: 0. };
+
+    /// Vector2 { x: 0., y: 1. }
+    pub const UP: Vector2 = Vector2 { x: 0., y: 1. };
+
+    /// Vector2 { x: 1., y: 0. }
+    pub const RIGHT: Vector2 = Vector2 { x: 1., y: 0. };
+
     /// Create a new vector pointing in the given direction, with the given magnitude
     pub fn new_euclidean(direction: f32, magnitude: f32) -> Self {
         let direction = direction - FRAC_PI_2;
-        Vector2::new(direction.cos(), -direction.sin()) * magnitude
+        Vector2::new(direction.cos(), -direction.sin()).scale(magnitude)
     }
 
     /// Returns the signed direction of this vector, with 0 being directly up
@@ -32,7 +47,11 @@ impl Vector2 {
         if self.x == 0.0 {
             return if self.y.is_sign_negative() { PI } else { 0.0 };
         } else if self.y == 0.0 {
-            return if x_is_sign_positive { FRAC_PI_2 } else { -FRAC_PI_2 };
+            return if x_is_sign_positive {
+                FRAC_PI_2
+            } else {
+                -FRAC_PI_2
+            };
         }
 
         let angle = (self.y / self.x).atan();
@@ -45,7 +64,7 @@ impl Vector2 {
     }
 
     /// returns the signed angle, between `from` and `to`
-    pub fn angle(from: Self, to: Self) -> f32 {
+    pub fn angle_between(from: &Self, to: &Self) -> f32 {
         let angle = to.direction() - from.direction();
         if angle > PI {
             -(2.0 * PI - angle)
@@ -56,9 +75,9 @@ impl Vector2 {
         }
     }
 
-    /// Returns the distance between two vectors 
-    pub fn distance(a: &Self, b: &Self) -> f32 {
-        ((b.x - a.x).powi(2) + (a.y - b.y).powi(2)).sqrt()
+    /// Returns the distance between this vector and another, `to`.
+    pub fn distance_to(&self, to: &Self) -> f32 {
+        ((to.x - self.x).powi(2) + (self.y - to.y).powi(2)).sqrt()
     }
 
     /// Returns the magnitude of this vector
@@ -67,72 +86,61 @@ impl Vector2 {
     }
 }
 
-impl std::ops::Add<Vector2> for Vector2 {
-    type Output = Self;
-
-    fn add(mut self, rhs: Vector2) -> Self::Output {
-        self += rhs;
+// ops
+impl Vector2 {
+    /// Adds this vector to another, moving `self`, and returning the result.
+    pub fn add(mut self, rhs: &Self) -> Self {
+        self.add_assign(rhs);
         self
     }
-}
 
-impl std::ops::AddAssign<Vector2> for Vector2 {
-    fn add_assign(&mut self, rhs: Vector2) {
+    /// Mutates `self`, by adding `rhs` to it.
+    pub fn add_assign(&mut self, rhs: &Self ) {
         self.x += rhs.x;
         self.y += rhs.y;
     }
-}
 
-impl std::ops::Sub<Vector2> for Vector2 {
-    type Output = Self;
-
-    fn sub(mut self, rhs: Vector2) -> Self::Output {
-        self -= rhs;
+    /// Subtracts this vector from another, moving `self`, and returning the result.
+    pub fn sub(mut self, rhs: &Self) -> Self {
+        self.sub_assign(rhs);
         self
     }
-}
 
-impl std::ops::SubAssign<Vector2> for Vector2 {
-    fn sub_assign(&mut self, rhs: Vector2) {
+    /// Mutates `self`, by subtracting `rhs` from it.
+    pub fn sub_assign(&mut self, rhs: &Self ) {
         self.x -= rhs.x;
         self.y -= rhs.y;
     }
-}
 
-impl std::ops::Mul<f32> for Vector2 {
-    type Output = Self;
+    /// Computes the dot (scalar) product of `self · rhs`, moving `self` and returning the result.
+    pub fn dot(&self, rhs: &Self) -> f32 {
+        self.x * rhs.x + self.y * rhs.y
+    }
 
-    fn mul(mut self, rhs: f32) -> Self::Output {
-        self *= rhs;
+    /// Multiplies this vector by a given scalar, moving `self` and returning the result.
+    pub fn scale(mut self, rhs: f32) -> Self {
+        self.scale_assign(rhs);
         self
     }
-}
 
-impl std::ops::MulAssign<f32> for Vector2 {
-    fn mul_assign(&mut self, rhs: f32) {
+    /// Mutates `self by multiplying it by `rhs`.
+    pub fn scale_assign(&mut self, rhs: f32) {
         self.x *= rhs;
         self.y *= rhs;
     }
-}
 
-impl std::ops::Mul<Matrix2x2> for Vector2 {
-    type Output = Self;
-
-    fn mul(self, matrix: Matrix2x2) -> Self::Output {
-        matrix.i * self.x + matrix.j * self.y
+    /// Multiplies this vector by a given matrix, moving `self` and returning the result.
+    pub fn mul(mut self, rhs: &Matrix2) -> Self {
+        self.mul_assign(rhs);
+        self
     }
-}
 
-impl std::ops::MulAssign<Matrix2x2> for Vector2 {
-    fn mul_assign(&mut self, matrix: Matrix2x2) {
-        *self = *self * matrix;
-    }
-}
-
-impl std::ops::Mul<Matrix3x2> for Vector2 {
-    type Output = Self;
-
-    fn mul(self, matrix: Matrix3x2) -> Self::Output {
-        (matrix.i * self.x + matrix.j * self.y) + matrix.k
+    /// Mutates `self by multiplying it by `rhs`.
+    pub fn mul_assign(&mut self, rhs: &Matrix2) {
+        let (x, y) = (self.x, self.y);
+        self.x *= rhs.i.x;
+        self.x += y * rhs.j.x;
+        self.y *= rhs.j.y;
+        self.y += x * rhs.i.y;
     }
 }

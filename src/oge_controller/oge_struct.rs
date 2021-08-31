@@ -26,13 +26,16 @@ impl Oge {
 
             for sprite in sprites {
                 let mut render_bundle = sprite.get_render_bundle();
-                let render_bundle_matrix = {
-                    let mut matrix = render_bundle.matrix.clone();
-                    matrix.k *= self.window_handler.matrix.as_mat2x2();
-                    matrix
-                };
-                let matrix = Matrix3x2::compose(&self.window_handler.matrix, &render_bundle_matrix);
-                render_bundle.matrix = &matrix;
+
+                let mut render_bundle_affine2 = render_bundle.affine2.clone();
+                render_bundle_affine2
+                    .translation
+                    .mul_assign(&self.window_handler.affine2.matrix2);
+                render_bundle_affine2 =
+                    render_bundle_affine2.reverse_compose(&self.window_handler.affine2);
+
+                render_bundle.affine2 = &render_bundle_affine2;
+                println!("{:#?}", render_bundle);
                 self.render_state
                     .render(&surface_texture_view, render_bundle);
             }
@@ -78,30 +81,6 @@ impl Oge {
 
     /// Returns the time, in seconds between the start of the previous update cycle
     /// and the start of the current update cycle.
-    ///
-    /// ```
-    ///          frame
-    ///          before          prev
-    ///          last            frame
-    ///          presented       presented
-    ///            │              │
-    ///            │        ┌─────┴────
-    ///            │        │
-    ///     ┌──────┴────────┤
-    ///     │               │  
-    ///     ─────────────────────────────► time
-    ///     ▲      ▲    ▲   ▲  ▲     ▲
-    ///     │      │    │   │  │     │
-    ///     prev   │  prev  │ current│
-    ///     update │  render│ update │
-    ///     cycle  │  cycle │ cycle  │
-    ///     start  │  start │ start  │
-    ///            │        │        │
-    ///            prev    prev      current
-    ///            update  render    update
-    ///            cycle   cycle     cycle
-    ///            end     end       end
-    /// ```
     pub fn delta_time(&self) -> f32 {
         self.meta_handler.delta_time()
     }
@@ -114,8 +93,9 @@ impl Oge {
     }
 
     /// Converts a physical position to the specified coordinate system
-    pub fn get_real_position(&self, cursor_position: Vector2) -> Vector2 {
-        cursor_position * self.window_handler.reverse_matrix
+    pub fn get_real_position(&self, physical_position: Vector2) -> Vector2 {
+        let real_position = physical_position.mul(&self.window_handler.reverse_affine2.matrix2);
+        real_position.add(&self.window_handler.affine2.translation)
     }
 
     /// Returns a mutable reference to the component with the provided type
