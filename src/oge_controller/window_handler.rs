@@ -21,30 +21,43 @@ pub struct WindowHandler {
     pub(crate) dimensions: WindowDimensions,
     /// The matrix that is used to transform points into normalized device coordinates
     pub(crate) matrix: crate::Matrix3x2,
+    /// Matrix used to convert a physical position to a viewable region point
+    pub(crate) reverse_matrix: crate::Matrix3x2,
 }
 
-impl WindowHandler{
+impl WindowHandler {
     pub(crate) fn new(window: &winit::window::Window) -> Self {
         Self {
             dimensions: WindowDimensions::from(&window.inner_size()),
-            matrix: Matrix3x2 {
-                i: Vector2::new(1.0, 0.0),
-                j: Vector2::new(0.0, 1.0),
-                k: Vector2::new(0.0, 0.0)
-            }
+            matrix: Matrix3x2::new(
+                Vector2::new(1.0, 0.0),
+                Vector2::new(0.0, 1.0),
+                Vector2::new(0.0, 0.0),
+            ),
+            reverse_matrix: Matrix3x2::new(
+                Vector2::new(1.0, 0.0),
+                Vector2::new(0.0, 1.0),
+                Vector2::new(0.0, 0.0),
+            ),
         }
     }
 
     pub(crate) fn set_viewable_region(&mut self, bounds: crate::Bounds) {
         let width = bounds.width();
         let height = bounds.height();
-        let center = bounds.bottom_left + Vector2::new(width * 0.5, height * 0.5);
+        let frac_width_2 = width * 0.5;
+        let frac_height_2 = height * 0.5;
+        let center = bounds.bottom_left + Vector2::new(frac_width_2, frac_height_2);
 
         self.matrix.i = Vector2::new(2.0 / width, 0.0);
         self.matrix.j = Vector2::new(0.0, 2.0 / height);
         self.matrix.k = Vector2::new(-center.x, -center.y);
+
+        let (window_width, window_height) =
+            (self.dimensions.width as f32, self.dimensions.height as f32);
+            
+        self.reverse_matrix.i = Vector2::new(width / window_width, 0.0);
+        self.reverse_matrix.j = Vector2::new(0.0, -height / window_height);
+        self.reverse_matrix.k = Vector2::new(-frac_width_2, frac_height_2);
     }
 }
-
-
-

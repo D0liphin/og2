@@ -1,3 +1,4 @@
+use crate::*;
 use cgmath::Zero;
 
 #[derive(Default)]
@@ -6,7 +7,7 @@ pub(crate) struct InputHandler {
     keyboard_input_state: [u64; 4],
     old_mouse_input_state: u64,
     mouse_input_state: u64,
-    cursor_position: crate::Vector2,
+    cursor_physical_position: Vector2,
 }
 
 #[repr(u8)]
@@ -90,13 +91,24 @@ impl InputHandler {
 
     pub(crate) fn get_mouse_button_status(&self, mouse_button_code: u8) -> ButtonStatus {
         let mask = 1 << mouse_button_code;
-        ButtonStatus::new(
-            unsafe { self.old_mouse_input_state & mask > 0 },
-            unsafe { self.mouse_input_state & mask > 0 },
-        )
+        ButtonStatus::new(unsafe { self.old_mouse_input_state & mask > 0 }, unsafe {
+            self.mouse_input_state & mask > 0
+        })
     }
 
     pub(crate) fn get_mouse_button_down(&self, mouse_button_code: u8) -> bool {
         self.mouse_input_state & (1 << mouse_button_code) > 0
+    }
+
+    pub(crate) fn set_cursor_physical_position(
+        &mut self,
+        physical_position: &winit::dpi::PhysicalPosition<f64>,
+    ) {
+        self.cursor_physical_position =
+            Vector2::new(physical_position.x as f32, physical_position.y as f32);
+    }
+
+    pub(crate) fn cursor_position(&self) -> Vector2 {
+        self.cursor_physical_position
     }
 }

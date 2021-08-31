@@ -43,4 +43,8 @@ impl Matrix3x2 {
         }
         buffer
     }
+
+    pub(crate) fn as_mat2x2(&self) -> Matrix2x2 {
+        unsafe { *(self as *const Self as *const Matrix2x2) }.clone()
+    }
 }

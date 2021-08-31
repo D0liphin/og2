@@ -18,7 +18,7 @@ impl Oge {
             Ok(frame) => frame,
         }
         .output;
-        
+
         {
             let surface_texture_view = surface_texture
                 .texture
@@ -26,7 +26,12 @@ impl Oge {
 
             for sprite in sprites {
                 let mut render_bundle = sprite.get_render_bundle();
-                let matrix = Matrix3x2::compose(&self.window_handler.matrix, render_bundle.matrix);
+                let render_bundle_matrix = {
+                    let mut matrix = render_bundle.matrix.clone();
+                    matrix.k *= self.window_handler.matrix.as_mat2x2();
+                    matrix
+                };
+                let matrix = Matrix3x2::compose(&self.window_handler.matrix, &render_bundle_matrix);
                 render_bundle.matrix = &matrix;
                 self.render_state
                     .render(&surface_texture_view, render_bundle);
@@ -42,7 +47,7 @@ impl Oge {
         self.window_handler.set_viewable_region(bounds);
     }
 
-    /// Returns the dimensions of the window 
+    /// Returns the dimensions of the window
     pub fn window_dimensions(&self) -> WindowDimensions {
         self.window_handler.dimensions
     }
@@ -52,7 +57,7 @@ impl Oge {
         self.input_handler.get_key_status(key_code as u8)
     }
 
-    /// Returns `true` if the key with the key code `key_code` is pressed, and 
+    /// Returns `true` if the key with the key code `key_code` is pressed, and
     /// `false` if it is not. This is faster than using `Oge::get_key_status(&self, key_code: KeyCode)`
     pub fn get_key_down(&self, key_code: KeyCode) -> bool {
         self.input_handler.get_key_down(key_code as u8)
@@ -60,18 +65,20 @@ impl Oge {
 
     /// Returns the `ButtonStatus` of the mouse button with the provided `MouseButtonCode`
     pub fn get_mouse_button_status(&self, mouse_button_code: MouseButtonCode) -> ButtonStatus {
-        self.input_handler.get_mouse_button_status(mouse_button_code as u8)
+        self.input_handler
+            .get_mouse_button_status(mouse_button_code as u8)
     }
 
     /// Returns `true` if the mouse button with the given `MouseButtonCode` is pressed,
     /// and false if it s not
     pub fn get_mouse_button_down(&self, mouse_button_code: MouseButtonCode) -> bool {
-        self.input_handler.get_mouse_button_down(mouse_button_code as u8)
+        self.input_handler
+            .get_mouse_button_down(mouse_button_code as u8)
     }
 
     /// Returns the time, in seconds between the start of the previous update cycle
     /// and the start of the current update cycle.
-    /// 
+    ///
     /// ```
     ///          frame
     ///          before          prev
@@ -97,6 +104,23 @@ impl Oge {
     /// ```
     pub fn delta_time(&self) -> f32 {
         self.meta_handler.delta_time()
+    }
+
+    /// Returns the physical cursor position on the screen. Convert this
+    /// To the coordinate system your window is using, with
+    /// `Oge::get_real_cursor_position(&self, cursor_position: Vector2)`
+    pub fn cursor_position(&self) -> Vector2 {
+        self.input_handler.cursor_position()
+    }
+
+    /// Converts a physical position to the specified coordinate system
+    pub fn get_real_position(&self, cursor_position: Vector2) -> Vector2 {
+        cursor_position * self.window_handler.reverse_matrix
+    }
+
+    /// Returns a mutable reference to the component with the provided type
+    pub fn get_component<T>(&mut self) -> &mut T {
+        todo!()
     }
 }
 

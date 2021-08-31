@@ -6,6 +6,7 @@ use winit::{
     window::{Window, WindowAttributes},
 };
 
+
 fn build_window() -> (EventLoop<()>, Window) {
     let event_loop = EventLoop::new();
 
@@ -16,7 +17,7 @@ fn build_window() -> (EventLoop<()>, Window) {
             height: 16,
         })),
         inner_size: Some(Size::Physical(PhysicalSize {
-            width: 9 * (1 << 6),
+            width: 16 * (1 << 6),
             height: 9 * (1 << 6),
         })),
         ..Default::default()
@@ -81,19 +82,24 @@ pub fn start<const SCRIPT_COUNT: usize>(
                 }
             }
 
-            WindowEvent::CursorMoved { position, .. } => {}
+            WindowEvent::CursorMoved { position, .. } => {
+                oge.input_handler.set_cursor_physical_position(position);
+                for script in scripts.iter_mut() {
+                    script.cursor_moved(&mut oge);
+                }
+            }
 
             WindowEvent::Resized(physical_size) => {
                 oge.resize(WindowDimensions::from(physical_size));
                 for script in scripts.iter_mut() {
-                    script.window_resize(&mut oge);
+                    script.window_resized(&mut oge);
                 }
             }
 
             WindowEvent::ScaleFactorChanged { new_inner_size, .. } => {
                 oge.resize(WindowDimensions::from(&**new_inner_size));
                 for script in scripts.iter_mut() {
-                    script.window_resize(&mut oge);
+                    script.window_resized(&mut oge);
                 }
             }
 

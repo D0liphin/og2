@@ -4,6 +4,7 @@ use std::time;
 pub(crate) struct MetaHandler {
     last_render_time_stamp: time::Instant,
     this_render_time_stamp: time::Instant,
+    delta_time: f32,
 }
 
 impl MetaHandler {
@@ -11,18 +12,20 @@ impl MetaHandler {
         Self {
             last_render_time_stamp: time::Instant::now(),
             this_render_time_stamp: time::Instant::now(),
+            delta_time: 0.0,
         }
     }
 
     pub(crate) fn update(&mut self) {
         self.last_render_time_stamp = self.this_render_time_stamp;
         self.this_render_time_stamp = time::Instant::now();
-    }
-
-    pub(crate) fn delta_time(&self) -> f32 {
-        self.this_render_time_stamp
+        self.delta_time = self.this_render_time_stamp
             .duration_since(self.last_render_time_stamp)
             .as_micros() as f32
             / 1_000_000.
+    }
+
+    pub(crate) fn delta_time(&self) -> f32 {
+        self.delta_time
     }
 }

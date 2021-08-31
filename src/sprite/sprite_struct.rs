@@ -37,11 +37,24 @@ impl Sprite {
         }
     }
 
-    /// Apply a 2x2 linear transformation to this sprite
+    /// Queue an additional 2x2 linear transformation to be executed on this sprite during the shader stage.  
+    ///
+    /// Because this only queues a transformation, you should keep track of performance-critical geometric
+    /// data yourself.
     pub fn transform(&mut self, matrix: &Matrix2x2) {
         self.mesh.matrix = Matrix3x2::compose(
             &self.mesh.matrix,
             &Matrix3x2::new(matrix.i, matrix.j, Vector2::new(0.0, 0.0)),
         );
+    }
+
+    /// Set the exact position of this sprite
+    pub fn set_position(&mut self, position: Vector2) {
+        self.mesh.matrix.k = position;
+    }
+
+    /// Unqueue all transformations to be exectured on this sprite, replacing them with a new one
+    pub fn set_transformation(&mut self, matrix: Matrix2x2) {
+        self.mesh.matrix = Matrix3x2::new(matrix.i, matrix.j, self.mesh.matrix.k);
     }
 }
