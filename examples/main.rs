@@ -62,7 +62,7 @@ impl Script for FpsCounter {
             .as_micros() as f32
             / 1_000_000.;
         if delta_time > 0.5 {
-            // printfl!("{: >12}fps\r", self.total_update_count / delta_time);
+            printfl!("{: >12}fps\r", self.total_update_count / delta_time);
             self.time_of_last_print = Instant::now();
             self.total_update_count = 0.0;
         }
@@ -101,12 +101,6 @@ impl Script for Car {
     }
 
     fn update(&mut self, oge: &mut Oge) {
-        printfl!(
-            "{: >12?} {: >12?}\r",
-            oge.cursor_position(),
-            oge.get_real_position(oge.cursor_position())
-        );
-
         let cursor_position = oge.get_real_position(oge.cursor_position());
         let direction_vector = oge::Vector2::new_euclidean(self.angle, 1.0);
         let car_cursor_angle =
@@ -188,5 +182,8 @@ impl Script for Car {
 }
 
 fn main() {
-    oge::main_loop::start([Car::load_script(), FpsCounter::load_script()]);
+    oge::main_loop::start([
+        Car::load_script(),
+        FpsCounter::load_script()
+    ]);
 }

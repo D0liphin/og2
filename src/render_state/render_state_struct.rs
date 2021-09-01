@@ -131,20 +131,8 @@ impl RenderState {
             .configure(&self.device_wrapper.device, &self.surface_configuration)
     }
 
-    pub(crate) fn render(&self, render_target: &wgpu::TextureView, render_bundle: RenderBundle) {
+    pub(crate) fn render(&self, render_target: &wgpu::TextureView, render_bundle: &RenderBundle) {
         let mut command_encoder = self.device_wrapper.create_command_encoder();
-
-        let bind_group = self.device_wrapper.create_texture_bind_group(
-            &render_bundle.texture_view,
-            &render_bundle.sampler,
-            &render_bundle.affine2.create_raw_buffer(),
-        );
-        let vertex_buffer = self
-            .device_wrapper
-            .create_vertex_buffer(&render_bundle.vertex_buffer_contents);
-        let index_buffer = self
-            .device_wrapper
-            .create_index_buffer(&render_bundle.index_buffer_contents);
 
         {
             let mut render_pass = command_encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
@@ -166,14 +154,13 @@ impl RenderState {
             });
 
             render_pass.set_pipeline(&self.render_pipeline);
-            render_pass.set_bind_group(0, &bind_group, &[]);
-            render_pass.set_vertex_buffer(0, vertex_buffer.slice(..));
-            render_pass.set_index_buffer(index_buffer.slice(..), wgpu::IndexFormat::Uint16);
-            render_pass.draw_indexed(
-                0..(render_bundle.index_buffer_contents.len() >> 1) as u32,
-                0,
-                0..1,
+            render_pass.set_bind_group(0, &render_bundle.bind_group, &[]);
+            render_pass.set_vertex_buffer(0, render_bundle.vertex_buffer.slice(..));
+            render_pass.set_index_buffer(
+                render_bundle.index_buffer.slice(..),
+                wgpu::IndexFormat::Uint16,
             );
+            render_pass.draw_indexed(0..render_bundle.index_count, 0, 0..1);
         }
 
         self.queue.submit(std::iter::once(command_encoder.finish()));

@@ -39,7 +39,7 @@ impl DeviceWrapper {
             format: preferred_texture_format,
             width: init_size.width,
             height: init_size.height,
-            present_mode: wgpu::PresentMode::Mailbox,
+            present_mode: wgpu::PresentMode::Fifo,
         };
         surface.configure(&device, &surface_configuration);
 

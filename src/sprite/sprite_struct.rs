@@ -27,13 +27,29 @@ impl Sprite {
         this
     }
 
-    pub(crate) fn get_render_bundle(&self) -> RenderBundle {
+    pub(crate) fn get_render_bundle(&self, oge: &Oge) -> RenderBundle {
+        
+        let bind_group = oge.render_state.device_wrapper.create_texture_bind_group(
+            &self.texture.texture_view,
+            &self.texture.sampler,
+            &{
+                let mut affine2 = self.mesh.affine2;
+                affine2 = affine2.reverse_compose(&oge.handlers.window_handler.affine2);
+                affine2.translation.mul_assign(&oge.handlers.window_handler.affine2.matrix2);
+                affine2.create_raw_buffer()
+            },
+        );
         RenderBundle {
-            texture_view: &self.texture.texture_view,
-            sampler: &self.texture.sampler,
-            vertex_buffer_contents: &self.mesh.vertex_buffer_contents(),
-            index_buffer_contents: &self.mesh.index_buffer_contents(),
-            affine2: &self.mesh.affine2,
+            vertex_buffer: oge
+                .render_state
+                .device_wrapper
+                .create_vertex_buffer(&self.mesh.vertex_buffer_contents()),
+            index_buffer: oge
+                .render_state
+                .device_wrapper
+                .create_index_buffer(&self.mesh.index_buffer_contents()),
+            index_count: self.mesh.indices.len() as u32,
+            bind_group,
         }
     }
 
@@ -47,7 +63,7 @@ impl Sprite {
             .compose_assign(&Affine2::new(matrix.i, matrix.j, Vector2::new(0.0, 0.0)));
     }
 
-    /// Set the exact position of this sprite. 
+    /// Set the exact position of this sprite.
     ///
     /// Note this position is only enqueued, not immediately applied.
     pub fn set_position(&mut self, position: Vector2) {
