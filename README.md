@@ -2,6 +2,29 @@
 
 A 2D Game Engine I'm writing for fun.
 
+```plaintext
+                                                                  Draw
+                                                                  Previous
+                                                                  Frame
+              ┌─ Previous                 ┌─ Previous               │         Update ─┐
+              │  Update                   │  Render                 │          Cycle  │
+              │  Cycle                    │  Cycle                  │                 │
+              │                           │                         │                 │
+   ┌──────────┴────────────────────┐ ┌────┴─────────────────────┐ ┌─┴─┐ ┌─────────────┴──
+   │                               │ │                          │ │   │ │
+   │                               │ │                          │ │   │ │
+   │                               │ │                          │ │   │ │
+   │                               │ │                          │ │   │ │
+══════════════════════════════════════════════════════════════════════════════════════════► t
+   │                                                                  │
+   └──────────────────────────────────────────────────────────────────┘           ▲
+                             oge.delta_time()                                     ┆
+                                                                                  ┆
+                                   ┆                                              ┆
+                                   ┆                                              ┆
+                                   └┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┘ called here
+```
+
 # Example - 'Particles'
 
 ![demonstration - this only looks slow because of the gif](https://imgur.com/KrUqWSP.gif)
@@ -177,3 +200,4 @@ fn main() {
 
 ```
 ## Tada! It works. \o/
+
