@@ -9,8 +9,13 @@ use winit::{
 fn build_window() -> (EventLoop<()>, Window) {
     let event_loop = EventLoop::new();
 
+    let icon = image::load_from_memory(include_bytes!("../images/logo.png")).unwrap();
+    let icon_bytes = icon.as_rgba8().unwrap();
+
     let mut window_builder = winit::window::WindowBuilder::new();
     window_builder.window = WindowAttributes {
+        title: "Oge Window".to_owned(),
+        window_icon: Some(winit::window::Icon::from_rgba(icon_bytes.to_vec(), 64, 64).unwrap()),
         min_inner_size: Some(Size::Physical(PhysicalSize {
             width: 16,
             height: 16,

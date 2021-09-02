@@ -6,8 +6,33 @@ struct FpsCounter {
     total_update_count: f32,
 }
 
+fn chop_float(float: f32, dp: u32) -> String {
+    let dp = dp as i32;
+    let float_string = format!("{}", float);
+    let mut chopped_string = String::new();
+    let mut dp_count = -1;
+    for c in float_string.chars() {
+        if dp_count > -1 {
+            dp_count += 1;
+        }
+        if c == '.' {
+            dp_count = 0;
+        }
+        chopped_string.push(c);
+        if dp_count == dp {
+            break;
+        }
+    }
+    chopped_string
+}
+
 impl Script for FpsCounter {
     fn start(_: &mut Oge) -> Self {
+        println!(
+            "
+ │ FPS COUNTER │
+ ├─────────────┤"
+        );
         Self {
             time_of_last_print: Instant::now(),
             total_update_count: 0.,
@@ -22,7 +47,7 @@ impl Script for FpsCounter {
             / 1_000_000.;
         if delta_time > 0.5 {
             use std::io::Write;
-            print!("{: >12}fps\r", self.total_update_count / delta_time);
+            print!("\r │  {: >6} fps │ ", chop_float(self.total_update_count / delta_time, 2));
             std::io::stdout().flush().unwrap_or(());
             self.time_of_last_print = Instant::now();
             self.total_update_count = 0.0;

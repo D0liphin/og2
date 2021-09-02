@@ -56,7 +56,6 @@ impl InputState {
 pub enum ButtonState {
     /// The button's last known state is pressed
     Pressed = 0,
-
     /// The button's last known state is released
     Released = 1,
 }
@@ -67,11 +66,11 @@ pub enum ButtonState {
 #[derive(Debug, Clone, Copy)]
 pub struct ButtonStatus {
     /// The current `ButtonState` of this button.
-    button_state: ButtonState,
+    pub button_state: ButtonState,
     /// The number of times the button was pressed since the last update cycle
-    pressed_count: u32,
+    pub pressed_count: u32,
     /// The number of times the button was released since the last update cycle
-    released_count: u32,
+    pub released_count: u32,
 }
 
 impl ButtonStatus {}
