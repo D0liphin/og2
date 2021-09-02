@@ -28,7 +28,7 @@ fn build_window() -> (EventLoop<()>, Window) {
 
 pub fn start<const SCRIPT_COUNT: usize>(
     scripts: [fn(&mut Oge) -> Box<dyn DynScript>; SCRIPT_COUNT],
-) {
+) -> Result<(), OgeError> {
     let (event_loop, window) = build_window();
     env_logger::init();
 
@@ -39,11 +39,20 @@ pub fn start<const SCRIPT_COUNT: usize>(
         meta_handler: MetaHandler::new(),
     };
 
-    let mut oge = Oge::new(&mut oge_handlers, &mut render_state);
-    let mut scripts = scripts.map(|get_script| get_script(&mut oge));
+    let dyn_scripts: [Box<dyn DynScript>; SCRIPT_COUNT];
+    {
+        let mut render_pass_resources = render_state.create_render_pass_resources()?;
+        let mut oge = Oge::new(
+            &mut oge_handlers,
+            &mut render_state,
+            &mut render_pass_resources,
+        );
+        dyn_scripts = scripts.map(|get_script| get_script(&mut oge));
+    }
+    let mut scripts = dyn_scripts;
 
-    event_loop.run(move |event, _, control_flow| {
-        let mut oge = Oge::new(&mut oge_handlers, &mut render_state);
+    event_loop.run(move |event, _, control_flow| 'event_handler: {
+        //
         match event {
             Event::WindowEvent {
                 ref event,
@@ -60,62 +69,71 @@ pub fn start<const SCRIPT_COUNT: usize>(
                         },
                     ..
                 } => {
-                    let key_code = *key_code as u32 as u8;
-                    oge.handlers.input_handler
+                    let key_code = unsafe {
+                        *(&(*key_code as u32 as usize) as *const usize as *const KeyCode)
+                    };
+                    oge_handlers
+                        .input_handler
                         .set_keyboard_input_state(key_code, *state as u32 == 0);
-
-                    for script in scripts.iter_mut() {
-                        script.keyboard_input(&mut oge);
-                    }
                 }
 
                 WindowEvent::MouseInput { button, state, .. } => {
-                    let mouse_button_code: u8 = match *button {
+                    let mouse_button_code = match *button {
                         MouseButton::Left => 0,
                         MouseButton::Right => 1,
                         MouseButton::Middle => 2,
-                        MouseButton::Other(n) => n as u8,
+                        MouseButton::Other(n) => n as usize,
                     };
-                    oge.handlers.input_handler
+                    let mouse_button_code =
+                        unsafe { *(&mouse_button_code as *const usize as *const MouseButtonCode) };
+                    oge_handlers
+                        .input_handler
                         .set_mouse_input_state(mouse_button_code, *state as u32 == 0);
-
-                    for script in scripts.iter_mut() {
-                        script.mouse_input(&mut oge);
-                    }
                 }
 
                 WindowEvent::CursorMoved { position, .. } => {
-                    oge.handlers.input_handler.set_cursor_physical_position(position);
-                    for script in scripts.iter_mut() {
-                        script.cursor_moved(&mut oge);
-                    }
+                    oge_handlers
+                        .input_handler
+                        .set_cursor_physical_position(position);
                 }
 
                 WindowEvent::Resized(physical_size) => {
-                    oge.resize(WindowDimensions::from(physical_size));
-                    for script in scripts.iter_mut() {
-                        script.window_resized(&mut oge);
-                    }
+                    let window_dimensions = WindowDimensions::from(physical_size);
+                    render_state.resize(&window_dimensions);
+                    oge_handlers.window_handler.dimensions = window_dimensions;
                 }
 
                 WindowEvent::ScaleFactorChanged { new_inner_size, .. } => {
-                    oge.resize(WindowDimensions::from(&**new_inner_size));
-                    for script in scripts.iter_mut() {
-                        script.window_resized(&mut oge);
-                    }
+                    let window_dimensions = WindowDimensions::from(&**new_inner_size);
+                    render_state.resize(&window_dimensions);
+                    oge_handlers.window_handler.dimensions = window_dimensions;
                 }
 
                 _ => {}
             },
 
             Event::RedrawRequested(_) => {
+                let mut render_pass_resources = match render_state.create_render_pass_resources() {
+                    Ok(resources) => resources,
+                    Err(_) => break 'event_handler,
+                };
+
+                let mut oge = Oge::new(
+                    &mut oge_handlers,
+                    &mut render_state,
+                    &mut render_pass_resources,
+                );
+
                 oge.handlers.meta_handler.update();
                 for script in scripts.iter_mut() {
                     script.update(&mut oge);
                 }
-                for script in scripts.iter() {
+                for script in scripts.iter_mut() {
                     script.render(&mut oge);
                 }
+                let mut render_pass = oge.finish();
+                render_pass.draw_render_bundles(&mut render_state);
+                render_pass_resources.finish(&render_state);
             }
 
             Event::MainEventsCleared => {

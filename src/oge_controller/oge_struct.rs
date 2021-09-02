@@ -1,8 +1,9 @@
 use crate::*;
 
-pub struct Oge<'a> {
+pub struct Oge<'a, 'b: 'a> {
     pub(crate) handlers: &'a mut OgeHandlers,
     pub(crate) render_state: &'a mut RenderState,
+    pub(crate) render_pass: RenderPass<'b>,
 }
 
 pub struct OgeHandlers {
@@ -11,30 +12,15 @@ pub struct OgeHandlers {
     pub(crate) meta_handler: MetaHandler,
 }
 
-impl<'a> Oge<'a> {
+impl<'a, 'b> Oge<'a, 'b> {
     pub fn create_texture(&self, config: &TextureConfiguration) -> Result<Texture, OgeError> {
         Texture::new(&self.render_state, &config)
     }
 
-    pub fn render_sprites<'b, T: IntoIterator<Item = &'b Sprite>>(&self, sprites: T) {
-        let surface_texture = match self.render_state.surface.get_current_frame() {
-            Err(e) => return,
-            Ok(frame) => frame,
+    pub fn draw_sprites<'c, T: IntoIterator<Item = &'c Sprite>>(&mut self, sprites: T) {
+        for sprite in sprites {
+            self.render_pass.render_bundles.push(sprite.get_render_bundle(&self));
         }
-        .output;
-
-        {
-            let surface_texture_view = surface_texture
-                .texture
-                .create_view(&wgpu::TextureViewDescriptor::default());
-
-            for sprite in sprites {
-                let mut render_bundle = sprite.get_render_bundle(&self);
-                self.render_state
-                    .render(&surface_texture_view, &render_bundle);
-            }
-        }
-        // done!
     }
 
     /// Sets the region of the coordinate system that should be displayed to the window.
@@ -49,30 +35,19 @@ impl<'a> Oge<'a> {
         self.handlers.window_handler.dimensions
     }
 
-    /// Returns the `ButtonStatus` of the key with this key code.
-    pub fn get_key_status(&self, key_code: KeyCode) -> ButtonStatus {
-        self.handlers.input_handler.get_key_status(key_code as u8)
-    }
-
     /// Returns `true` if the key with the key code `key_code` is pressed, and
     /// `false` if it is not. This is faster than using `Oge::get_key_status(&self, key_code: KeyCode)`
     pub fn get_key_down(&self, key_code: KeyCode) -> bool {
-        self.handlers.input_handler.get_key_down(key_code as u8)
+        self.handlers.input_handler.get_key_down(key_code)
     }
 
-    /// Returns the `ButtonStatus` of the mouse button with the provided `MouseButtonCode`
-    pub fn get_mouse_button_status(&self, mouse_button_code: MouseButtonCode) -> ButtonStatus {
-        self.handlers
-            .input_handler
-            .get_mouse_button_status(mouse_button_code as u8)
-    }
 
     /// Returns `true` if the mouse button with the given `MouseButtonCode` is pressed,
     /// and false if it s not
     pub fn get_mouse_button_down(&self, mouse_button_code: MouseButtonCode) -> bool {
         self.handlers
             .input_handler
-            .get_mouse_button_down(mouse_button_code as u8)
+            .get_mouse_button_down(mouse_button_code)
     }
 
     /// Returns the time, in seconds between the start of the previous update cycle
@@ -101,16 +76,51 @@ impl<'a> Oge<'a> {
     }
 }
 
-impl<'a> Oge<'a> {
-    pub(crate) fn new(handlers: &'a mut OgeHandlers, render_state: &'a mut RenderState) -> Self {
+impl<'a, 'b> Oge<'a, 'b> {
+    pub(crate) fn new(
+        handlers: &'a mut OgeHandlers,
+        render_state: &'a mut RenderState,
+        render_pass_resources: &'b mut RenderPassResources,
+    ) -> Self {
+        let color_attachments = [wgpu::RenderPassColorAttachment {
+            view: &render_pass_resources.surface_texture_view,
+            resolve_target: None,
+            ops: wgpu::Operations {
+                load: wgpu::LoadOp::Clear(wgpu::Color {
+                    r: 1.0,
+                    g: 1.0,
+                    b: 1.0,
+                    a: 1.0,
+                }),
+                store: true,
+            },
+        }];
+        let render_pass =
+            render_pass_resources
+                .command_encoder
+                .begin_render_pass(&wgpu::RenderPassDescriptor { 
+                    label: None,
+                    color_attachments: &color_attachments,
+                    depth_stencil_attachment: None,
+                });
+
         Self {
             handlers,
             render_state,
+            render_pass: RenderPass {
+                color_attachments,
+                render_pass,
+                render_bundles: &mut render_pass_resources.render_bundles
+            },
         }
     }
 
     pub(crate) fn resize(&mut self, window_dimensions: WindowDimensions) {
         self.handlers.window_handler.dimensions = window_dimensions;
-        self.render_state.resize(&window_dimensions);
+        
+    }
+
+    pub(crate) fn finish(self) -> RenderPass<'b> {
+        self.render_pass
     }
 }

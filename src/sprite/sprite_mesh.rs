@@ -1,10 +1,20 @@
 use crate::*;
+use std::f32::consts::PI;
 
 #[repr(C)]
 #[derive(Debug, Clone, Copy)]
 pub(crate) struct VertexInput {
     position: Vector2,
     texture_coordinates: Vector2,
+}
+
+impl VertexInput {
+    pub fn new(position: Vector2) -> Self {
+        Self {
+            position,
+            texture_coordinates: Vector2::ZERO,
+        }
+    }
 }
 
 #[derive(Debug, Clone)]
@@ -40,6 +50,41 @@ impl SpriteMesh {
             ],
             indices: vec![0, 1, 2, 0, 2, 3, /* padding */ 0, 0],
             affine2: Affine2::default(),
+        }
+    }
+
+    /// Creates a new elipse approximation, with `detail` vertices. Panics if `detail`
+    /// is less than 3
+    pub fn new_elipse(a: f32, b: f32, detail: u16) -> Self {
+        let matrix = Matrix2::rotation(-2. * PI / detail as f32);
+        let mut vector = Vector2::UP;
+
+        let mut vertices: Vec<VertexInput> = Vec::with_capacity(detail as usize);
+        vertices.push(VertexInput::new(vector));
+        let mut indices: Vec<u16> = Vec::with_capacity({
+            let capacity = (detail - 2) * 3;
+            if capacity.is_power_of_two() {
+                capacity
+            } else {
+                capacity + 1
+            }
+        } as usize);
+
+        for i in 1..detail {
+            vector.mul_assign(&matrix);
+            vertices.push(VertexInput::new(vector));
+            indices.push(0);
+            indices.push(i);
+            indices.push(i + 1);
+        }
+
+        Self {
+            vertices,
+            indices,
+            affine2: Affine2 {
+                matrix2: Matrix2::stretch(a, b),
+                translation: Vector2::ZERO,
+            }
         }
     }
 

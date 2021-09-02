@@ -53,5 +53,23 @@ impl TextureError {
     }
 }
 
-#[derive(Debug)]
-pub struct RenderError {}
+
+pub struct RenderError {
+    info: String,
+}
+
+impl fmt::Debug for RenderError {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{}", self.info)
+    }
+}
+
+impl_display!(RenderError);
+
+impl RenderError {
+    pub(crate) fn frame() -> OgeError {
+        OgeError::Render(RenderError {
+            info: format!("Could not get current frame")
+        })
+    }
+}

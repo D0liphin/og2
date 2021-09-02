@@ -131,38 +131,56 @@ impl RenderState {
             .configure(&self.device_wrapper.device, &self.surface_configuration)
     }
 
-    pub(crate) fn render(&self, render_target: &wgpu::TextureView, render_bundle: &RenderBundle) {
-        let mut command_encoder = self.device_wrapper.create_command_encoder();
+    pub(crate) fn create_render_pass_resources(&self) -> Result<RenderPassResources, OgeError> {
+        let surface_texture = self
+            .surface
+            .get_current_frame()
+            .or(Err(crate::RenderError::frame()))?
+            .output;
+        let surface_texture_view = surface_texture
+            .texture
+            .create_view(&wgpu::TextureViewDescriptor::default());
 
-        {
-            let mut render_pass = command_encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
-                label: None,
-                color_attachments: &[wgpu::RenderPassColorAttachment {
-                    view: &render_target,
-                    resolve_target: None,
-                    ops: wgpu::Operations {
-                        load: wgpu::LoadOp::Clear(wgpu::Color {
-                            r: 1.0,
-                            g: 1.0,
-                            b: 1.0,
-                            a: 1.0,
-                        }),
-                        store: true,
-                    },
-                }],
-                depth_stencil_attachment: None,
-            });
-
-            render_pass.set_pipeline(&self.render_pipeline);
-            render_pass.set_bind_group(0, &render_bundle.bind_group, &[]);
-            render_pass.set_vertex_buffer(0, render_bundle.vertex_buffer.slice(..));
-            render_pass.set_index_buffer(
-                render_bundle.index_buffer.slice(..),
-                wgpu::IndexFormat::Uint16,
-            );
-            render_pass.draw_indexed(0..render_bundle.index_count, 0, 0..1);
-        }
-
-        self.queue.submit(std::iter::once(command_encoder.finish()));
+        Ok(RenderPassResources {
+            command_encoder: self.device_wrapper.create_command_encoder(),
+            surface_texture,
+            surface_texture_view,
+            render_bundles: vec![],
+        })
     }
+
+    // pub(crate) fn render(&self, render_target: &wgpu::TextureView, render_bundle: &RenderBundle) {
+    //     let mut command_encoder = self.device_wrapper.create_command_encoder();
+
+    //     {
+    //         let mut render_pass = command_encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
+    //             label: None,
+    //             color_attachments: &[wgpu::RenderPassColorAttachment {
+    //                 view: &render_target,
+    //                 resolve_target: None,
+    //                 ops: wgpu::Operations {
+    //                     load: wgpu::LoadOp::Clear(wgpu::Color {
+    //                         r: 1.0,
+    //                         g: 1.0,
+    //                         b: 1.0,
+    //                         a: 1.0,
+    //                     }),
+    //                     store: true,
+    //                 },
+    //             }],
+    //             depth_stencil_attachment: None,
+    //         });
+
+    //         render_pass.set_pipeline(&self.render_pipeline);
+    //         render_pass.set_bind_group(0, &render_bundle.bind_group, &[]);
+    //         render_pass.set_vertex_buffer(0, render_bundle.vertex_buffer.slice(..));
+    //         render_pass.set_index_buffer(
+    //             render_bundle.index_buffer.slice(..),
+    //             wgpu::IndexFormat::Uint16,
+    //         );
+    //         render_pass.draw_indexed(0..render_bundle.index_count, 0, 0..1);
+    //     }
+
+    //     self.queue.submit(std::iter::once(command_encoder.finish()));
+    // }
 }

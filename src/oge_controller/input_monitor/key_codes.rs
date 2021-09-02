@@ -1,11 +1,13 @@
-#[repr(C)]
+#[repr(usize)]
+#[derive(Debug, Clone, Copy)]
 pub enum MouseButtonCode {
     Left = 0,
     Right = 1,
     Middle = 2,
 }
 
-#[repr(u8)]
+#[repr(usize)]
+#[derive(Debug, Clone, Copy)]
 pub enum KeyCode {
     /// The '1' key over the letters.
     Key1,

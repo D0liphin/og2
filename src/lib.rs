@@ -1,4 +1,4 @@
-#![feature(box_syntax)]
+#![feature(box_syntax, label_break_value)]
 
 #[macro_use]
 macro_rules! usemod {
