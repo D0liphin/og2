@@ -9,8 +9,8 @@ struct InputState {
 
 impl InputState {
     fn new(capacity: usize) -> Self {
-        let mut state = Vec::with_capacity(256);
-        for _ in 0..256 {
+        let mut state = Vec::with_capacity(capacity);
+        for _ in 0..capacity {
             state.push(ButtonStatus {
                 button_state: ButtonState::Released,
                 pressed_count: 0,
@@ -56,6 +56,7 @@ impl InputState {
 pub enum ButtonState {
     /// The button's last known state is pressed
     Pressed = 0,
+
     /// The button's last known state is released
     Released = 1,
 }
@@ -85,7 +86,7 @@ impl InputHandler {
     pub(crate) fn new() -> Self {
         Self {
             keyboard_input_state: InputState::new(256),
-            mouse_input_state: InputState::new(256),
+            mouse_input_state: InputState::new(8),
             cursor_physical_position: Vector2::ZERO,
         }
     }
@@ -106,7 +107,7 @@ impl InputHandler {
     }
 
     pub(crate) fn set_mouse_input_state(&mut self, mouse_button_code: usize, set: ButtonState) {
-        self.keyboard_input_state.set(mouse_button_code, set);
+        self.mouse_input_state.set(mouse_button_code, set);
     }
 
     pub(crate) fn get_mouse_button_status(

@@ -23,6 +23,8 @@ pub struct WindowHandler {
     pub(crate) affine2: Affine2,
     /// Affine matrix used to convert a physical position to a viewable region point
     pub(crate) reverse_affine2: Affine2,
+    /// `true` if the window dimensions have been updated since the last update cycle.
+    pub(crate) dimensions_updated: bool,
 }
 
 impl WindowHandler {
@@ -31,6 +33,7 @@ impl WindowHandler {
             dimensions: WindowDimensions::from(&window.inner_size()),
             affine2: Affine2::default(),
             reverse_affine2: Affine2::default(),
+            dimensions_updated: true,
         }
     }
 
@@ -54,11 +57,22 @@ impl WindowHandler {
         let (window_width, window_height) =
             (self.dimensions.width as f32, self.dimensions.height as f32);
         self.reverse_affine2 = Affine2 {
-            matrix2:  Matrix2 {
+            matrix2: Matrix2 {
                 i: Vector2::new(width / window_width, 0.0),
                 j: Vector2::new(0.0, -height / window_height),
             },
             translation: Vector2::new(-frac_width_2, frac_height_2),
         }
+    }
+
+    pub(crate) fn resize(&mut self, dimensions: WindowDimensions) {
+        self.dimensions = dimensions;
+        self.dimensions_updated = true;
+    }
+
+    pub(crate) fn resized (&mut self) -> bool {
+        let res = self.dimensions_updated;
+        self.dimensions_updated = false;
+        res
     }
 }

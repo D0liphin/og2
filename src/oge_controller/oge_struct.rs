@@ -32,6 +32,12 @@ impl<'a, 'b> Oge<'a, 'b> {
         self.handlers.window_handler.set_viewable_region(bounds);
     }
 
+    /// Returns `true` if the window has been resized and this resize has not yet been handled. 
+    /// Calling this function indicates that you will handle the window resize
+    pub fn window_has_resized(&mut self) -> bool {
+        self.handlers.window_handler.resized()
+    }
+
     /// Returns the dimensions of the window
     pub fn window_dimensions(&self) -> WindowDimensions {
         self.handlers.window_handler.dimensions

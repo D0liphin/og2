@@ -106,13 +106,13 @@ pub fn start<const SCRIPT_COUNT: usize>(
                 WindowEvent::Resized(physical_size) => {
                     let window_dimensions = WindowDimensions::from(physical_size);
                     render_state.resize(&window_dimensions);
-                    oge_handlers.window_handler.dimensions = window_dimensions;
+                    oge_handlers.window_handler.resize(window_dimensions);
                 }
 
                 WindowEvent::ScaleFactorChanged { new_inner_size, .. } => {
                     let window_dimensions = WindowDimensions::from(&**new_inner_size);
                     render_state.resize(&window_dimensions);
-                    oge_handlers.window_handler.dimensions = window_dimensions;
+                    oge_handlers.window_handler.resize(window_dimensions);
                 }
 
                 _ => {}
