@@ -1,63 +1,79 @@
 use crate::*;
-use std::time;
+use std::collections::HashSet;
 
+#[derive(Debug)]
 struct InputState {
     state: Vec<ButtonStatus>,
+    updated_button_indices: HashSet<usize>,
 }
 
 impl InputState {
     fn new(capacity: usize) -> Self {
         let mut state = Vec::with_capacity(256);
         for _ in 0..256 {
-            state.push(ButtonStatus::Released);
+            state.push(ButtonStatus {
+                button_state: ButtonState::Released,
+                pressed_count: 0,
+                released_count: 0,
+            });
         }
-        Self { state }
+        Self {
+            state,
+            updated_button_indices: HashSet::new(),
+        }
     }
 
-    fn set(&mut self, index: usize, set_value: bool) {
+    fn set(&mut self, index: usize, set_value: ButtonState) {
+        self.updated_button_indices.insert(index);
         let button_status = self.state.get_mut(index).unwrap();
-        if set_value {
-            match button_status {
-                ButtonStatus::Pressed(ref mut instant) => *instant = time::Instant::now(),
-                ButtonStatus::Released => *button_status = ButtonStatus::Pressed(time::Instant::now()),
+        match set_value {
+            ButtonState::Pressed => {
+                button_status.pressed_count += 1;
+                button_status.button_state = ButtonState::Pressed;
             }
-        } else {
-            match button_status {
-                ButtonStatus::Pressed(_) => 
-                _ => {}
+            ButtonState::Released => {
+                button_status.released_count += 1;
+                button_status.button_state = ButtonState::Released;
             }
+        }
+    }
+
+    fn get(&self, index: usize) -> ButtonStatus {
+        self.state[index]
+    }
+
+    fn update(&mut self) {
+        for i in self.updated_button_indices.drain() {
+            let button_status = self.state.get_mut(i).unwrap();
+            button_status.pressed_count = 0;
+            button_status.released_count = 0;
         }
     }
 }
 
-pub enum ButtonStatus {
-    Pressed(time::Instant),
-    Released,
+#[repr(C)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
+pub enum ButtonState {
+    /// The button's last known state is pressed
+    Pressed = 0,
+    /// The button's last known state is released
+    Released = 1,
 }
 
-impl ButtonStatus {
-    /// Returns the approximate time this key has been pressed in seconds as an `f32`.   
-    /// If this key is not pressed, this function returns `None`.   
-    /// ## Example
-    /// ```rs
-    /// if let oge.get_key_status(oge::KeyCode::Space).time_pressed_f32() = Some(time_pressed) {
-    ///     if time_pressed < oge.delta_time() {
-    ///         // Space bar was just pressed
-    ///     }
-    /// }
-    /// ```
-    pub fn time_pressed_f32(&self) -> Option<f32> {
-        match self {
-            ButtonStatus::Pressed(start_instant) => Some(
-                time::Instant::now()
-                    .duration_since(*start_instant)
-                    .as_micros() as f32
-                    / 1_000_000.,
-            ),
-            ButtonStatus::Released => None,
-        }
-    }
+/// Describes the current state of a button. Button states are kept track of seperately,
+/// and may change from pressed to released and vice versa several times between update
+/// cycles.
+#[derive(Debug, Clone, Copy)]
+pub struct ButtonStatus {
+    /// The current `ButtonState` of this button.
+    button_state: ButtonState,
+    /// The number of times the button was pressed since the last update cycle
+    pressed_count: u32,
+    /// The number of times the button was released since the last update cycle
+    released_count: u32,
 }
+
+impl ButtonStatus {}
 
 pub(crate) struct InputHandler {
     keyboard_input_state: InputState,
@@ -74,31 +90,37 @@ impl InputHandler {
         }
     }
 
-    pub(crate) fn set_keyboard_input_state(&mut self, key_code: KeyCode, set: bool) {
-        todo!()
+    pub(crate) fn set_keyboard_input_state(&mut self, key_code: usize, set: ButtonState) {
+        self.keyboard_input_state.set(key_code, set);
     }
 
     pub(crate) fn get_key_status(&self, key_code: KeyCode) -> ButtonStatus {
-        todo!()
+        self.keyboard_input_state.get(key_code as usize)
     }
 
     pub(crate) fn get_key_down(&self, key_code: KeyCode) -> bool {
-        todo!()
+        self.keyboard_input_state
+            .get(key_code as usize)
+            .button_state
+            == ButtonState::Pressed
     }
 
-    pub(crate) fn set_mouse_input_state(&mut self, mouse_button_code: MouseButtonCode, set: bool) {
-        todo!()
+    pub(crate) fn set_mouse_input_state(&mut self, mouse_button_code: usize, set: ButtonState) {
+        self.keyboard_input_state.set(mouse_button_code, set);
     }
 
     pub(crate) fn get_mouse_button_status(
         &self,
         mouse_button_code: MouseButtonCode,
     ) -> ButtonStatus {
-        todo!()
+        self.mouse_input_state.get(mouse_button_code as usize)
     }
 
     pub(crate) fn get_mouse_button_down(&self, mouse_button_code: MouseButtonCode) -> bool {
-        todo!()
+        self.mouse_input_state
+            .get(mouse_button_code as usize)
+            .button_state
+            == ButtonState::Pressed
     }
 
     pub(crate) fn set_cursor_physical_position(
@@ -111,5 +133,10 @@ impl InputHandler {
 
     pub(crate) fn cursor_position(&self) -> Vector2 {
         self.cursor_physical_position
+    }
+
+    pub(crate) fn update(&mut self) {
+        self.keyboard_input_state.update();
+        self.mouse_input_state.update();
     }
 }

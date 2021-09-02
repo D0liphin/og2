@@ -69,12 +69,15 @@ pub fn start<const SCRIPT_COUNT: usize>(
                         },
                     ..
                 } => {
-                    let key_code = unsafe {
-                        *(&(*key_code as u32 as usize) as *const usize as *const KeyCode)
-                    };
-                    oge_handlers
-                        .input_handler
-                        .set_keyboard_input_state(key_code, *state as u32 == 0);
+                    let key_code = *key_code as u32 as usize;
+                    oge_handlers.input_handler.set_keyboard_input_state(
+                        key_code,
+                        if *state == ElementState::Pressed {
+                            ButtonState::Pressed
+                        } else {
+                            ButtonState::Released
+                        },
+                    );
                 }
 
                 WindowEvent::MouseInput { button, state, .. } => {
@@ -84,11 +87,14 @@ pub fn start<const SCRIPT_COUNT: usize>(
                         MouseButton::Middle => 2,
                         MouseButton::Other(n) => n as usize,
                     };
-                    let mouse_button_code =
-                        unsafe { *(&mouse_button_code as *const usize as *const MouseButtonCode) };
-                    oge_handlers
-                        .input_handler
-                        .set_mouse_input_state(mouse_button_code, *state as u32 == 0);
+                    oge_handlers.input_handler.set_mouse_input_state(
+                        mouse_button_code,
+                        if *state == ElementState::Pressed {
+                            ButtonState::Pressed
+                        } else {
+                            ButtonState::Released
+                        },
+                    );
                 }
 
                 WindowEvent::CursorMoved { position, .. } => {
@@ -117,7 +123,6 @@ pub fn start<const SCRIPT_COUNT: usize>(
                     Ok(resources) => resources,
                     Err(_) => break 'event_handler,
                 };
-
                 let mut oge = Oge::new(
                     &mut oge_handlers,
                     &mut render_state,
@@ -131,6 +136,8 @@ pub fn start<const SCRIPT_COUNT: usize>(
                 for script in scripts.iter_mut() {
                     script.render(&mut oge);
                 }
+                oge.handlers.input_handler.update();
+
                 let mut render_pass = oge.finish();
                 render_pass.draw_render_bundles(&mut render_state);
                 render_pass_resources.finish(&render_state);

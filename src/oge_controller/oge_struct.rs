@@ -19,7 +19,9 @@ impl<'a, 'b> Oge<'a, 'b> {
 
     pub fn draw_sprites<'c, T: IntoIterator<Item = &'c Sprite>>(&mut self, sprites: T) {
         for sprite in sprites {
-            self.render_pass.render_bundles.push(sprite.get_render_bundle(&self));
+            self.render_pass
+                .render_bundles
+                .push(sprite.get_render_bundle(&self));
         }
     }
 
@@ -41,6 +43,10 @@ impl<'a, 'b> Oge<'a, 'b> {
         self.handlers.input_handler.get_key_down(key_code)
     }
 
+    /// Returns the `ButtonStatus` for a key with the specified `KeyCode`
+    pub fn get_key_status(&self, key_code: KeyCode) -> ButtonStatus {
+        self.handlers.input_handler.get_key_status(key_code)
+    }
 
     /// Returns `true` if the mouse button with the given `MouseButtonCode` is pressed,
     /// and false if it s not
@@ -48,6 +54,13 @@ impl<'a, 'b> Oge<'a, 'b> {
         self.handlers
             .input_handler
             .get_mouse_button_down(mouse_button_code)
+    }
+
+    /// Returns the `ButtonStatus` for a mouse button with the specified `MouseButtonCode`.
+    pub fn get_mouse_button_status(&self, mouse_button_code: MouseButtonCode) -> ButtonStatus {
+        self.handlers
+            .input_handler
+            .get_mouse_button_status(mouse_button_code)
     }
 
     /// Returns the time, in seconds between the start of the previous update cycle
@@ -98,7 +111,7 @@ impl<'a, 'b> Oge<'a, 'b> {
         let render_pass =
             render_pass_resources
                 .command_encoder
-                .begin_render_pass(&wgpu::RenderPassDescriptor { 
+                .begin_render_pass(&wgpu::RenderPassDescriptor {
                     label: None,
                     color_attachments: &color_attachments,
                     depth_stencil_attachment: None,
@@ -110,14 +123,13 @@ impl<'a, 'b> Oge<'a, 'b> {
             render_pass: RenderPass {
                 color_attachments,
                 render_pass,
-                render_bundles: &mut render_pass_resources.render_bundles
+                render_bundles: &mut render_pass_resources.render_bundles,
             },
         }
     }
 
     pub(crate) fn resize(&mut self, window_dimensions: WindowDimensions) {
         self.handlers.window_handler.dimensions = window_dimensions;
-        
     }
 
     pub(crate) fn finish(self) -> RenderPass<'b> {
