@@ -1,10 +1,8 @@
 <div style="width: 100%; display: flex; justify-content: space-between; margin-bottom: 50px;">
-    <div style="width: calc(100% - 251px); display: inline-block;">
         <h1><span style="font-size: 80px">OG2</span></h1>
-        <img src="https://imgur.com/KZZi9nS.png" width="250px" height="250px" style="margin-top: -40px"/>
         <p>A 2D Game Engine I'm writing for fun.</p>
-        <p>That's the logo (wow, fancy!) --></p> 
-    </div>
+        <img src="https://imgur.com/KZZi9nS.png" width="250px" height="250px" style="margin-top: -40px"/>
+        <p>That's the logo (wow, fancy!)</p> 
 </div>
 
 ```plaintext
