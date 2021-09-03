@@ -1,5 +1,5 @@
 <div style="width: 100%; display: flex; justify-content: space-between; margin-bottom: 50px;">
-    <div style="width: calc(100% - 251px)">
+    <div style="width: calc(100% - 251px); display: inline-block;">
         <h1><span style="font-size: 80px">OG2</span></h1>
         <p>A 2D Game Engine I'm writing for fun.</p>
         <p>That's the logo (wow, fancy!) --></p> 
