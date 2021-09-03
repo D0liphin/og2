@@ -60,6 +60,16 @@ pub enum ButtonState {
     Released = 1,
 }
 
+impl From<winit::event::ElementState> for ButtonState {
+    fn from(state: winit::event::ElementState) -> Self {
+        if state == winit::event::ElementState::Pressed {
+            ButtonState::Pressed
+        } else {
+            ButtonState::Released
+        }
+    }
+}
+
 /// Describes the current state of a button. Button states are kept track of seperately,
 /// and may change from pressed to released and vice versa several times between update
 /// cycles.
@@ -73,12 +83,10 @@ pub struct ButtonStatus {
     pub released_count: u32,
 }
 
-impl ButtonStatus {}
-
 pub(crate) struct InputHandler {
     keyboard_input_state: InputState,
     mouse_input_state: InputState,
-    cursor_physical_position: Vector2,
+    cursor_physical_positions: Vec<Vector2>,
 }
 
 impl InputHandler {
@@ -86,7 +94,7 @@ impl InputHandler {
         Self {
             keyboard_input_state: InputState::new(256),
             mouse_input_state: InputState::new(8),
-            cursor_physical_position: Vector2::ZERO,
+            cursor_physical_positions: vec![Vector2::ZERO],
         }
     }
 
@@ -127,16 +135,24 @@ impl InputHandler {
         &mut self,
         physical_position: &winit::dpi::PhysicalPosition<f64>,
     ) {
-        self.cursor_physical_position =
-            Vector2::new(physical_position.x as f32, physical_position.y as f32);
+        self.cursor_physical_positions.push(
+            Vector2::new(physical_position.x as f32, physical_position.y as f32));
     }
 
     pub(crate) fn cursor_position(&self) -> Vector2 {
-        self.cursor_physical_position
+        *self.cursor_physical_positions.last().unwrap()
+    }
+
+    pub(crate) fn cursor_positions(&self) -> Vec<Vector2> {
+        self.cursor_physical_positions.clone()
     }
 
     pub(crate) fn update(&mut self) {
         self.keyboard_input_state.update();
         self.mouse_input_state.update();
+        
+        let last = *self.cursor_physical_positions.last().unwrap();
+        self.cursor_physical_positions.clear();
+        self.cursor_physical_positions.push(last);
     }
 }

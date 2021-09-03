@@ -12,6 +12,16 @@ pub struct OgeHandlers {
     pub(crate) meta_handler: MetaHandler,
 }
 
+impl OgeHandlers {
+    pub(crate) fn new(window: &winit::window::Window) -> Self {
+        Self {
+            window_handler: WindowHandler::new(&window),
+            input_handler: InputHandler::new(),
+            meta_handler: MetaHandler::new(),
+        }
+    }
+}
+
 impl<'a, 'b> Oge<'a, 'b> {
     pub fn create_texture(&self, config: &TextureConfiguration) -> Result<Texture, OgeError> {
         Texture::new(&self.render_state, &config)
@@ -32,7 +42,7 @@ impl<'a, 'b> Oge<'a, 'b> {
         self.handlers.window_handler.set_viewable_region(bounds);
     }
 
-    /// Returns `true` if the window has been resized and this resize has not yet been handled. 
+    /// Returns `true` if the window has been resized and this resize has not yet been handled.
     /// Calling this function indicates that you will handle the window resize
     pub fn window_has_resized(&mut self) -> bool {
         self.handlers.window_handler.resized()
@@ -83,10 +93,32 @@ impl<'a, 'b> Oge<'a, 'b> {
     }
 
     /// Converts a physical position to the specified coordinate system
-    pub fn get_real_position(&self, physical_position: Vector2) -> Vector2 {
+    pub fn get_real_position(&self, physical_position: &Vector2) -> Vector2 {
         let real_position =
             physical_position.mul(&self.handlers.window_handler.reverse_affine2.matrix2);
         real_position.add(&self.handlers.window_handler.reverse_affine2.translation)
+    }
+
+    /// Gets the most recent mouse position, with its coordinates converted to the specified
+    /// coordinate system
+    pub fn get_real_cursor_position(&self) -> Vector2 {
+        self.get_real_position(&self.cursor_position())
+    }
+
+    /// Returns a `Vec` containing all the cursor positions since the last update. Often,
+    /// the cursor will have its position updated several times in-between frames, so use
+    /// this to get the most accurate path of the cursor
+    pub fn cursor_positions(&self) -> Vec<Vector2> {
+        self.handlers.input_handler.cursor_positions()
+    }
+
+    /// Gets the physical cursor positions (see `oge.cursor_positions()`) and applies
+    /// get_real_position
+    pub fn get_real_cursor_positions(&self) -> Vec<Vector2> {
+        self.cursor_positions()
+            .into_iter()
+            .map(|physical_position| self.get_real_position(&physical_position))
+            .collect()
     }
 
     /// Returns a mutable reference to the component with the provided type

@@ -132,7 +132,7 @@ impl Script for ParticleEffects {
             let mut rng = rand::thread_rng();
             for _ in 0..((rng.gen::<u8>() >> 3) + 4) {
                 self.particles.push(Particle {
-                    position: oge.get_real_position(oge.cursor_position()),
+                    position: oge.get_real_position(&oge.cursor_position()),
                     velocity: {
                         oge::Vector2::new_euclidean(
                             PI * (rng.gen::<f32>() - 0.5),

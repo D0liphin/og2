@@ -4,6 +4,10 @@ use std::path::PathBuf;
 #[derive(Clone, Copy, Debug)]
 pub enum TextureProjectionMethod {
     ScaleToFit = 0,
+    /// Should be used for textures that are created from a single color. 
+    /// Provides a faster creation than `ScaleToFit` but is functionally
+    /// identical for `Color` texture sources.
+    OneColor = 1,
 }
 
 pub enum TextureSource {
@@ -56,6 +60,7 @@ impl Default for TextureConfiguration {
     }
 }
 
+#[derive(Debug)]
 pub struct Texture {
     pub(crate) texture: wgpu::Texture,
     pub(crate) texture_view: wgpu::TextureView,

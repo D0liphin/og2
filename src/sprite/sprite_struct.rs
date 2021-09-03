@@ -6,6 +6,7 @@ pub struct SpriteConfiguration<'a> {
     pub texture: Texture,
 }
 
+#[derive(Debug)]
 pub struct Sprite {
     label: Option<Box<str>>,
     mesh: SpriteMesh,

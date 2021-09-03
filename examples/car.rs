@@ -51,7 +51,7 @@ impl Script for Car {
             });
         }
 
-        let cursor_position = oge.get_real_position(oge.cursor_position());
+        let cursor_position = oge.get_real_position(&oge.cursor_position());
         let direction_vector = oge::Vector2::new_euclidean(self.angle, 1.0);
         let car_cursor_angle =
             oge::Vector2::angle_between(&direction_vector, &(cursor_position.sub(&self.position)));

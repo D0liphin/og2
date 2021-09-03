@@ -1,6 +1,11 @@
-# OG2
-
-A 2D Game Engine I'm writing for fun.
+<div style="width: 100%; display: flex; justify-content: space-between; margin-bottom: 50px;">
+    <div style="width: calc(100% - 200px)">
+        <h1><span style="font-size: 80px">OG2</span></h1>
+        <p>A 2D Game Engine I'm writing for fun.</p>
+        <p>That's the logo (wow, fancy!) --></p> 
+    <img src="https://imgur.com/KZZi9nS.png" width="250px" height="250px" style="margin-top: -40px"/>
+    </div>
+</div>
 
 ```plaintext
                                                                   Draw

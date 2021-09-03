@@ -4,7 +4,7 @@ use crate::*;
 use std::f32::consts::{FRAC_PI_2, PI};
 
 #[repr(C)]
-#[derive(Debug, Default, Clone, Copy)]
+#[derive(Debug, Default, Clone, Copy, PartialEq, PartialOrd)]
 /// Representation of 2D vectors and points.
 pub struct Vector2 {
     pub x: f32,
@@ -19,7 +19,7 @@ impl Vector2 {
     }
 
     /// Vector2 { x: 0., y: -0. }
-    pub const ZERO: Vector2 = Vector2 { x: 0., y: -0. };
+    pub const ZERO: Vector2 = Vector2 { x: 0., y: 0. };
 
     /// Vector2 { x: 0., y: -1. }
     pub const DOWN: Vector2 = Vector2 { x: 0., y: -1. };
@@ -84,6 +84,41 @@ impl Vector2 {
     pub fn magnitude(&self) -> f32 {
         (self.x.powi(2) + self.y.powi(2)).sqrt()
     }
+
+    /// Returns the normalized version of this matrix.
+    pub fn normalize(self) -> Self {
+        self.scale(1. / self.magnitude())
+    }
+
+    /// Normalizes this matrix
+    pub fn normalize_assign(&mut self) {
+        self.scale_assign(1. / self.magnitude());
+    }
+
+    /// Returns a vector that is this vector normalized, then scaled by `magnitude`
+    pub fn with_magnitude(self, magnitude: f32) -> Self {
+        self.scale(magnitude / self.magnitude())
+    }
+
+    /// Returns this vectors direction, relative to another point `origin`
+    pub fn relative_direction(&self, origin: &Vector2) -> f32 {
+        (*self).sub(origin).direction()
+    } 
+
+    /// Rotates this vector pi / 2 radians counter clockwise, returning the result 
+    pub(crate) fn rotate_90_ccw(self) -> Self  {
+        Self::new(-self.y, self.x)
+    }
+
+    /// Rotates this vector pi / 2 radians clockwise, returning the result 
+    pub(crate) fn rotate_90_cw(self) -> Self  {
+        Self::new(self.y, -self.x)
+    }
+
+    /// Rotates this vector pi radians, returning the result
+    pub(crate) fn rotate_180(self) -> Self  {
+        self.scale(-1.)
+    }
 }
 
 // ops
@@ -95,7 +130,7 @@ impl Vector2 {
     }
 
     /// Mutates `self`, by adding `rhs` to it.
-    pub fn add_assign(&mut self, rhs: &Self ) {
+    pub fn add_assign(&mut self, rhs: &Self) {
         self.x += rhs.x;
         self.y += rhs.y;
     }
@@ -107,7 +142,7 @@ impl Vector2 {
     }
 
     /// Mutates `self`, by subtracting `rhs` from it.
-    pub fn sub_assign(&mut self, rhs: &Self ) {
+    pub fn sub_assign(&mut self, rhs: &Self) {
         self.x -= rhs.x;
         self.y -= rhs.y;
     }

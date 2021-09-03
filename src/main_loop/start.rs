@@ -31,33 +31,32 @@ fn build_window() -> (EventLoop<()>, Window) {
     (event_loop, window)
 }
 
-pub fn start<const SCRIPT_COUNT: usize>(
-    scripts: [fn(&mut Oge) -> Box<dyn DynScript>; SCRIPT_COUNT],
+pub fn start<I: IntoIterator<Item = fn(&mut Oge) -> Box<dyn DynScript>>>(
+    scripts: I,
 ) -> Result<(), OgeError> {
-    let (event_loop, window) = build_window();
     env_logger::init();
 
-    let mut render_state = RenderState::new(&window);
-    let mut oge_handlers = OgeHandlers {
-        window_handler: WindowHandler::new(&window),
-        input_handler: InputHandler::new(),
-        meta_handler: MetaHandler::new(),
-    };
+    let (event_loop, window) = build_window();
 
-    let dyn_scripts: [Box<dyn DynScript>; SCRIPT_COUNT];
-    {
+    let mut render_state = RenderState::new(&window);
+    let mut oge_handlers = OgeHandlers::new(&window);
+
+    // Run start() on all scripts
+    let mut scripts: Vec<Box<dyn DynScript>> = {
         let mut render_pass_resources = render_state.create_render_pass_resources()?;
         let mut oge = Oge::new(
             &mut oge_handlers,
             &mut render_state,
             &mut render_pass_resources,
         );
-        dyn_scripts = scripts.map(|get_script| get_script(&mut oge));
-    }
-    let mut scripts = dyn_scripts;
+        scripts
+            .into_iter()
+            .map(|get_script| get_script(&mut oge))
+            .collect()
+    };
 
     event_loop.run(move |event, _, control_flow| 'event_handler: {
-        //
+        // This is just here because I don't want it to format this
         match event {
             Event::WindowEvent {
                 ref event,
@@ -74,15 +73,10 @@ pub fn start<const SCRIPT_COUNT: usize>(
                         },
                     ..
                 } => {
-                    let key_code = *key_code as u32 as usize;
-                    oge_handlers.input_handler.set_keyboard_input_state(
-                        key_code,
-                        if *state == ElementState::Pressed {
-                            ButtonState::Pressed
-                        } else {
-                            ButtonState::Released
-                        },
-                    );
+                    let key_code = *key_code as usize;
+                    oge_handlers
+                        .input_handler
+                        .set_keyboard_input_state(key_code, ButtonState::from(*state));
                 }
 
                 WindowEvent::MouseInput { button, state, .. } => {
@@ -92,14 +86,9 @@ pub fn start<const SCRIPT_COUNT: usize>(
                         MouseButton::Middle => 2,
                         MouseButton::Other(n) => n as usize,
                     };
-                    oge_handlers.input_handler.set_mouse_input_state(
-                        mouse_button_code,
-                        if *state == ElementState::Pressed {
-                            ButtonState::Pressed
-                        } else {
-                            ButtonState::Released
-                        },
-                    );
+                    oge_handlers
+                        .input_handler
+                        .set_mouse_input_state(mouse_button_code, ButtonState::from(*state));
                 }
 
                 WindowEvent::CursorMoved { position, .. } => {
@@ -143,7 +132,7 @@ pub fn start<const SCRIPT_COUNT: usize>(
                 }
                 oge.handlers.input_handler.update();
 
-                let mut render_pass = oge.finish();
+                let render_pass = oge.finish();
                 render_pass.draw_render_bundles(&mut render_state);
                 render_pass_resources.finish(&render_state);
             }

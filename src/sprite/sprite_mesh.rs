@@ -1,5 +1,5 @@
 use crate::*;
-use std::f32::consts::PI;
+use std::f32::consts::{FRAC_PI_2, PI};
 
 #[repr(C)]
 #[derive(Debug, Clone, Copy)]
@@ -84,7 +84,83 @@ impl SpriteMesh {
             affine2: Affine2 {
                 matrix2: Matrix2::stretch(a, b),
                 translation: Vector2::ZERO,
+            },
+        }
+    }
+
+    /// Creates a new line with the specified points. Panics if points.len() < 2.
+    pub fn new_line(width: f32, points: &[Vector2]) -> Self {
+        if points.len() < 2 {
+            panic!("Cannot create a line using fewer than 2 points");
+        }
+
+        let half_width = width / 2.;
+        let mut vertices = Vec::<VertexInput>::with_capacity(points.len() * 2);
+        let mut indices = Vec::<u16>::with_capacity(points.len() * 6);
+
+        // given a point, this returns the shifts left and right from that point that would
+        // give us the points we need on our line
+        let get_left_right_shifts = |point: &Vector2, prev: &Vector2| {
+            let left_shift = point.sub(&prev).with_magnitude(half_width).rotate_90_ccw();
+            let right_shift = left_shift.rotate_180();
+            (left_shift, right_shift)
+        };
+
+        // for each point after the first [0], find a line either side of it that is half_width
+        // away from it, angled away from the previous point
+        let mut lines = Vec::<(Line, Line)>::with_capacity(points.len() * 2 - 1);
+        for (i_prev, point) in points.iter().skip(1).enumerate() {
+            let prev = points[i_prev];
+            let (shift_left, shift_right) = get_left_right_shifts(point, &prev);
+            let line = Line::connect(point, &prev);
+            lines.push((line.shift(&shift_left), line.shift(&shift_right)));
+        }
+
+        // The first point is a special case, so here we get the direction relative to the second point [1]
+        {
+            let point = points[0];
+            let (left_shift, right_shift) = get_left_right_shifts(&points[1], &point);
+            vertices.extend([
+                VertexInput::new(left_shift.add(&point)),
+                VertexInput::new(right_shift.add(&point)),
+            ]);
+            indices.extend([0, 1, 2, 1, 3, 2]);
+        }
+        let mut skips = 0;
+        for i_next in 1..points.len() - 1 {
+            let i = i_next - 1;
+            let (left_line, right_line) = unsafe { lines.get_unchecked(i) };
+            let (next_left_line, next_right_line) = unsafe { lines.get_unchecked(i_next) };
+
+            let vector_1 = Line::intersection(left_line, next_left_line);
+            if vector_1.is_some() {
+                let vector_2 = Line::intersection(right_line, next_right_line);
+                vertices.extend([
+                    VertexInput::new(vector_1.unwrap()),
+                    VertexInput::new(vector_2.unwrap()),
+                ]);
+                let i = (i as u16 - skips) * 2;
+                indices.extend([i, i + 1, i + 2, i + 1, i + 3, i + 2]);
+            } else {
+                skips += 1;
             }
+        }
+        {
+            let i = (vertices.len() - 2) as u16;
+            let point = &points[points.len() - 1];
+            let (left_point, right_point) =
+                get_left_right_shifts(&point, &points[points.len() - 2]);
+            vertices.extend([
+                VertexInput::new(left_point.add(&point)),
+                VertexInput::new(right_point.add(&point)),
+            ]);
+            indices.extend([i, i + 1, i + 2, i + 1, i + 3, i + 2]);
+        }
+
+        Self {
+            vertices,
+            indices,
+            affine2: Affine2::default(),
         }
     }
 
@@ -141,6 +217,9 @@ impl SpriteMesh {
                     vertex.texture_coordinates.x = vertex.position.x * scale_factor_x + 0.5;
                     vertex.texture_coordinates.y = vertex.position.y * scale_factor_y + 0.5;
                 }
+            }
+            TextureProjectionMethod::OneColor => {
+                // all zero
             }
         }
     }
