@@ -93,7 +93,7 @@ impl Script for Tree {
     }
 }
 
-fn main() -> Result<(), oge::OgeError> {
+fn main() -> oge::Result<()> {
     oge::main_loop::start([
         //
         Tree::load_script(),

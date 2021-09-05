@@ -31,24 +31,14 @@ impl SpriteMesh {
 
         Self {
             vertices: vec![
-                VertexInput {
-                    position: Vector2::new(-x, -y),
-                    texture_coordinates: Vector2::new(0.0, 0.0),
-                },
-                VertexInput {
-                    position: Vector2::new(x, -y),
-                    texture_coordinates: Vector2::new(0.0, 0.0),
-                },
-                VertexInput {
-                    position: Vector2::new(x, y),
-                    texture_coordinates: Vector2::new(0.0, 0.0),
-                },
-                VertexInput {
-                    position: Vector2::new(-x, y),
-                    texture_coordinates: Vector2::new(0.0, 0.0),
-                },
+                VertexInput::new(Vector2::new(-x, -y)),
+                VertexInput::new(Vector2::new(x, -y)),
+                VertexInput::new(Vector2::new(x, y)),
+                VertexInput::new(Vector2::new(-x, y)),
             ],
-            indices: vec![0, 1, 2, 0, 2, 3, /* padding */ 0, 0],
+            indices: vec![
+                0, 1, 2, 0, 2, 3, /* padding (though I don't think we need this) */ 0, 0,
+            ],
             affine2: Affine2::default(),
         }
     }
@@ -88,20 +78,22 @@ impl SpriteMesh {
         }
     }
 
-    /// Creates a new line with the specified points. Panics if points.len() < 2.
-    pub fn new_line(width: f32, points: &[Vector2]) -> Self {
+    pub(crate) fn new_line(width: f32, points: &[Vector2]) -> Self {
         if points.len() < 2 {
             panic!("Cannot create a line using fewer than 2 points");
         }
 
-        let half_width = width / 2.;
+        let half_width = 0.5 * width;
         let mut vertices = Vec::<VertexInput>::with_capacity(points.len() * 2);
         let mut indices = Vec::<u16>::with_capacity(points.len() * 6);
 
-        // given a point, this returns the shifts left and right from that point that would
-        // give us the points we need on our line
-        let get_left_right_shifts = |point: &Vector2, prev: &Vector2| {
-            let left_shift = point.sub(&prev).with_magnitude(half_width).rotate_90_ccw();
+        // Returns the left and right translations required to move from `point` to a point on the
+        // line mesh. Left and right being relative to relative_point.relative_direction(&point)
+        let get_left_right_shifts = |point: &Vector2, relative_point: &Vector2| {
+            let left_shift = point
+                .sub(&relative_point)
+                .with_magnitude(half_width)
+                .rotate_90_ccw();
             let right_shift = left_shift.rotate_180();
             (left_shift, right_shift)
         };
@@ -109,8 +101,8 @@ impl SpriteMesh {
         // for each point after the first [0], find a line either side of it that is half_width
         // away from it, angled away from the previous point
         let mut lines = Vec::<(Line, Line)>::with_capacity(points.len() * 2 - 1);
-        for (i_prev, point) in points.iter().skip(1).enumerate() {
-            let prev = points[i_prev];
+        for (prev_point_index, point) in points.iter().skip(1).enumerate() {
+            let prev = unsafe { points.get_unchecked(prev_point_index) };
             let (shift_left, shift_right) = get_left_right_shifts(point, &prev);
             let line = Line::connect(point, &prev);
             lines.push((line.shift(&shift_left), line.shift(&shift_right)));
@@ -118,19 +110,27 @@ impl SpriteMesh {
 
         // The first point is a special case, so here we get the direction relative to the second point [1]
         {
-            let point = points[0];
-            let (left_shift, right_shift) = get_left_right_shifts(&points[1], &point);
+            let point_0 = points[0];
+            let (left_shift, right_shift) = get_left_right_shifts(&points[1], &point_0);
             vertices.extend([
-                VertexInput::new(left_shift.add(&point)),
-                VertexInput::new(right_shift.add(&point)),
+                VertexInput::new(left_shift.add(&point_0)),
+                VertexInput::new(right_shift.add(&point_0)),
             ]);
             indices.extend([0, 1, 2, 1, 3, 2]);
         }
+
+        // Although it is not possible for lines to be parallel, it is possible (and even likely) that
+        // some will be coincident. If multiple points lie on the same line, we needn't generate
+        // `VertexInput`s for them, and so we increment `skips` so that our index buffer still points to
+        // the correct vertices.
         let mut skips = 0;
-        for i_next in 1..points.len() - 1 {
-            let i = i_next - 1;
-            let (left_line, right_line) = unsafe { lines.get_unchecked(i) };
-            let (next_left_line, next_right_line) = unsafe { lines.get_unchecked(i_next) };
+        for next_line_index in 1..points.len() - 1 {
+            let line_index = next_line_index - 1;
+            // I have extensively checked this and verified that this does not, under all scenarios result
+            // in undefined behaviour. The performance gain is not substantial, but can be noticeable
+            // for very detailed paths.
+            let (left_line, right_line) = unsafe { lines.get_unchecked(line_index) };
+            let (next_left_line, next_right_line) = unsafe { lines.get_unchecked(next_line_index) };
 
             let vector_1 = Line::intersection(left_line, next_left_line);
             if vector_1.is_some() {
@@ -139,13 +139,17 @@ impl SpriteMesh {
                     VertexInput::new(vector_1.unwrap()),
                     VertexInput::new(vector_2.unwrap()),
                 ]);
-                let i = (i as u16 - skips) * 2;
+                let i = ((line_index as u16) << 1) - skips;
                 indices.extend([i, i + 1, i + 2, i + 1, i + 3, i + 2]);
             } else {
-                skips += 1;
+                skips += 2;
             }
         }
+
         {
+            // len - 1 points to the last vertex and len - 2 points to the penultimate vertex
+            // we always draw in the patter bl, br, tl, br, tr, tl and so, viewing the last two vertices as
+            // ..bl, br], we need to point to bl (len - 2).
             let i = (vertices.len() - 2) as u16;
             let point = &points[points.len() - 1];
             let (left_point, right_point) =
@@ -189,13 +193,16 @@ impl SpriteMesh {
         }
     }
 
+    /// ## TODO
+    /// Update this method so that the various projection methods actually have the desired
+    /// effect.
     pub(crate) fn update_texture_coordinates(&mut self, texture: &Texture) {
         match texture.projection_method {
             TextureProjectionMethod::ScaleToFit => {
                 let bounds = self.bounds();
                 let width = bounds.width();
                 let height = bounds.height();
-                let center = bounds.center();
+                //let center = bounds.center();
 
                 let mesh_aspect_ratio = width / height;
                 let texture_aspect_ratio = {
@@ -218,7 +225,7 @@ impl SpriteMesh {
                     vertex.texture_coordinates.y = vertex.position.y * scale_factor_y + 0.5;
                 }
             }
-            TextureProjectionMethod::OneColor => {
+            TextureProjectionMethod::SingleColor => {
                 // all zero
             }
         }

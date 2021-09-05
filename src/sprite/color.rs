@@ -23,14 +23,20 @@ impl Color {
     }
 
     pub const BLACK: Self = Self::new(0., 0., 0., 1.);
-    
-    pub const WHITE: Self = Self::new(1., 1., 1., 1.,);
+
+    pub const WHITE: Self = Self::new(1., 1., 1., 1.);
+
+    pub const RED: Self = Self::new(1., 0., 0., 1.);
+
+    pub const BLUE: Self = Self::new(0., 0., 1., 1.);
+
+    pub const GREEN: Self = Self::new(0., 1., 0., 1.);
 
     pub(crate) fn as_u8(float: f32) -> u8 {
         (float * 255.).round() as u8
     }
 
-    /// Returns a byte array representing this color. 
+    /// Returns a byte array representing this color.
     pub fn as_rgba8(&self) -> [u8; 4] {
         [
             Color::as_u8(self.r),

@@ -2,9 +2,9 @@ use crate::*;
 
 pub(crate) struct RenderPassResources {
     pub(crate) command_encoder: wgpu::CommandEncoder,
-    // DO NOT FLIP WITH BELOW
+    // _surface_texture must not be dropped before any views that have been created from it
     pub(crate) surface_texture_view: wgpu::TextureView,
-    pub(crate) surface_texture: wgpu::SurfaceTexture,
+    pub(crate) _surface_texture: wgpu::SurfaceTexture,
     pub(crate) render_bundles: Vec<RenderBundle>,
 }
 
@@ -16,7 +16,7 @@ impl RenderPassResources {
 }
 
 pub struct RenderPass<'a> {
-    pub(crate) color_attachments: [wgpu::RenderPassColorAttachment<'a>; 1],
+    pub(crate) _color_attachments: [wgpu::RenderPassColorAttachment<'a>; 1],
     pub(crate) render_pass: wgpu::RenderPass<'a>,
     pub(crate) render_bundles: &'a mut Vec<RenderBundle>,
 }

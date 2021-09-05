@@ -28,7 +28,7 @@ impl Line {
                 - self.direction.y * (other.position.x - self.position.x))
                 / den
         };
-        Some(other.direction.scale(t).add(&other.position))
+        Some(other.point_at(t))
     }
 
     /// Moves all points on this line over by `shift` and returns a line representing this
@@ -37,5 +37,19 @@ impl Line {
             position: self.position.add(&shift),
             direction: self.direction,
         }
+    }
+
+    /// Gets the point on the line self(t)
+    pub fn point_at(&self, t: f32) -> Vector2 {
+        self.direction.scale(t).add(&self.position)
+    }
+}
+
+impl std::fmt::Display for Line {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let m = self.direction.y / self.direction.x;
+        let point = self.point_at(0.);
+        let c = point.y - m * point.x;
+        write!(f, "y = {}x + {}", m, c)
     }
 }

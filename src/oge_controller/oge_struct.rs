@@ -23,7 +23,7 @@ impl OgeHandlers {
 }
 
 impl<'a, 'b> Oge<'a, 'b> {
-    pub fn create_texture(&self, config: &TextureConfiguration) -> Result<Texture, OgeError> {
+    pub fn create_texture(&self, config: &TextureConfiguration) -> Result<Texture> {
         Texture::new(&self.render_state, &config)
     }
 
@@ -133,7 +133,7 @@ impl<'a, 'b> Oge<'a, 'b> {
         render_state: &'a mut RenderState,
         render_pass_resources: &'b mut RenderPassResources,
     ) -> Self {
-        let color_attachments = [wgpu::RenderPassColorAttachment {
+        let _color_attachments = [wgpu::RenderPassColorAttachment {
             view: &render_pass_resources.surface_texture_view,
             resolve_target: None,
             ops: wgpu::Operations {
@@ -151,7 +151,7 @@ impl<'a, 'b> Oge<'a, 'b> {
                 .command_encoder
                 .begin_render_pass(&wgpu::RenderPassDescriptor {
                     label: None,
-                    color_attachments: &color_attachments,
+                    color_attachments: &_color_attachments,
                     depth_stencil_attachment: None,
                 });
 
@@ -159,17 +159,14 @@ impl<'a, 'b> Oge<'a, 'b> {
             handlers,
             render_state,
             render_pass: RenderPass {
-                color_attachments,
+                _color_attachments,
                 render_pass,
                 render_bundles: &mut render_pass_resources.render_bundles,
             },
         }
     }
 
-    pub(crate) fn resize(&mut self, window_dimensions: WindowDimensions) {
-        self.handlers.window_handler.dimensions = window_dimensions;
-    }
-
+    /// Consume this controller and return its `RenderPass` for drawing.
     pub(crate) fn finish(self) -> RenderPass<'b> {
         self.render_pass
     }

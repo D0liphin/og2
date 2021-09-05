@@ -33,7 +33,7 @@ fn build_window() -> (EventLoop<()>, Window) {
 
 pub fn start<I: IntoIterator<Item = fn(&mut Oge) -> Box<dyn DynScript>>>(
     scripts: I,
-) -> Result<(), OgeError> {
+) -> Result<()> {
     env_logger::init();
 
     let (event_loop, window) = build_window();

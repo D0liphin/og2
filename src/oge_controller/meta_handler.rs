@@ -1,6 +1,8 @@
-use crate::*;
+// use crate::*;
 use std::time;
 
+/// Struct for handling meta information about the game. This includes things
+/// like time.
 pub(crate) struct MetaHandler {
     last_render_time_stamp: time::Instant,
     this_render_time_stamp: time::Instant,

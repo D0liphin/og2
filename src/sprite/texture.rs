@@ -4,10 +4,10 @@ use std::path::PathBuf;
 #[derive(Clone, Copy, Debug)]
 pub enum TextureProjectionMethod {
     ScaleToFit = 0,
-    /// Should be used for textures that are created from a single color. 
+    /// Should be used for textures that are created from a single color.
     /// Provides a faster creation than `ScaleToFit` but is functionally
     /// identical for `Color` texture sources.
-    OneColor = 1,
+    SingleColor = 1,
 }
 
 pub enum TextureSource {
@@ -71,7 +71,7 @@ pub struct Texture {
 
 // pub(crate)
 impl Texture {
-    pub(crate) fn load_image(path_buf: &PathBuf) -> Result<image::DynamicImage, OgeError> {
+    pub(crate) fn load_image(path_buf: &PathBuf) -> Result<image::DynamicImage> {
         image::io::Reader::open(path_buf)
             .or(Err(crate::TextureError::open(&path_buf)))?
             .decode()
@@ -81,7 +81,7 @@ impl Texture {
     pub(crate) fn create_from_dynamic_image(
         render_state: &RenderState,
         dynamic_image: image::DynamicImage,
-    ) -> Result<(wgpu::Texture, wgpu::TextureView, (u32, u32)), OgeError> {
+    ) -> Result<(wgpu::Texture, wgpu::TextureView, (u32, u32))> {
         use image::GenericImageView;
 
         let dimensions = dynamic_image.dimensions();
@@ -91,10 +91,7 @@ impl Texture {
         Ok((texture, texture_view, dimensions))
     }
 
-    pub(crate) fn new(
-        render_state: &RenderState,
-        config: &TextureConfiguration,
-    ) -> Result<Self, OgeError> {
+    pub(crate) fn new(render_state: &RenderState, config: &TextureConfiguration) -> Result<Self> {
         let (texture, texture_view, dimensions) = match &config.source {
             TextureSource::Path(path_buf) => {
                 let dynamic_image = Texture::load_image(&path_buf)?;

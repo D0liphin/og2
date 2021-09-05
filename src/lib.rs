@@ -1,6 +1,6 @@
 #![feature(box_syntax, label_break_value)]
+#![allow(unused_imports)]
 
-#[macro_use]
 macro_rules! usemod {
     [$($vis:vis $module:ident),* $(,)?] => {
         $(
@@ -18,5 +18,7 @@ usemod![
     pub sprite,
     pub error,
     pub(crate) render_state,
-    pub(crate) util,
 ];
+
+pub mod util;
+pub(crate) use util::*;

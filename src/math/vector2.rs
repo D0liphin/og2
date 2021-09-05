@@ -105,18 +105,23 @@ impl Vector2 {
         (*self).sub(origin).direction()
     } 
 
+    /// Returns the midpoint of two vectors 
+    pub fn midpoint(&self, other: &Self) -> Self {
+        self.add(&other).scale(0.5)
+    }
+
     /// Rotates this vector pi / 2 radians counter clockwise, returning the result 
-    pub(crate) fn rotate_90_ccw(self) -> Self  {
+    pub fn rotate_90_ccw(self) -> Self  {
         Self::new(-self.y, self.x)
     }
 
     /// Rotates this vector pi / 2 radians clockwise, returning the result 
-    pub(crate) fn rotate_90_cw(self) -> Self  {
+    pub fn rotate_90_cw(self) -> Self  {
         Self::new(self.y, -self.x)
     }
 
     /// Rotates this vector pi radians, returning the result
-    pub(crate) fn rotate_180(self) -> Self  {
+    pub fn rotate_180(self) -> Self  {
         self.scale(-1.)
     }
 }

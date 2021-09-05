@@ -83,6 +83,22 @@ pub struct ButtonStatus {
     pub released_count: u32,
 }
 
+impl ButtonStatus {
+    /// Returns true if this button's `pressed_count` is greater than `0` and 
+    /// the button's `button_state` is currently `ButtonState::Pressed`; otherwise
+    /// returns `false`
+    pub fn just_pressed(&self) -> bool {
+        self.pressed_count > 0 && self.button_state == ButtonState::Pressed
+    }
+
+    /// Returns `true` if this button's `released_count` is greater than `0` and 
+    /// the button's `button_state` is currently `ButtonState::Released`; otherwise
+    /// returns `false`
+    pub fn just_released(&self) -> bool {
+        self.released_count > 0 && self.button_state == ButtonState::Released
+    }
+}
+
 pub(crate) struct InputHandler {
     keyboard_input_state: InputState,
     mouse_input_state: InputState,

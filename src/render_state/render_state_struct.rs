@@ -19,30 +19,6 @@ impl RenderState {
     async fn new_async(window: &winit::window::Window) -> Self {
         let (device_wrapper, surface, surface_configuration, queue) =
             DeviceWrapper::new(window).await;
-
-        let bind_group = device_wrapper.create_texture_bind_group(
-            &{
-                device_wrapper
-                    .device
-                    .create_texture(&wgpu::TextureDescriptor {
-                        label: Some("Blank Texture"),
-                        size: wgpu::Extent3d::default(),
-                        mip_level_count: 1,
-                        sample_count: 1,
-                        dimension: wgpu::TextureDimension::D2,
-                        format: wgpu::TextureFormat::Rgba8UnormSrgb,
-                        usage: wgpu::TextureUsages::TEXTURE_BINDING,
-                    })
-                    .create_view(&wgpu::TextureViewDescriptor::default())
-            },
-            &{
-                device_wrapper
-                    .device
-                    .create_sampler(&wgpu::SamplerDescriptor::default())
-            },
-            &[0; RenderState::UNIFORM_BUFFER_SIZE.get() as usize],
-        );
-
         let render_pipeline = device_wrapper.create_render_pipeline();
 
         Self {
@@ -58,7 +34,7 @@ impl RenderState {
         &self,
         label: Option<&str>,
         dynamic_image: image::DynamicImage,
-    ) -> Result<wgpu::Texture, OgeError> {
+    ) -> Result<wgpu::Texture> {
         use image::GenericImageView;
 
         let image_buffer = dynamic_image
@@ -78,7 +54,7 @@ impl RenderState {
         label: Option<&str>,
         image_buffer: &[u8],
         dimensions: (u32, u32),
-    ) -> Result<wgpu::Texture, OgeError> {
+    ) -> Result<wgpu::Texture> {
         let texture_extent_3d = wgpu::Extent3d {
             width: dimensions.0,
             height: dimensions.1,
@@ -131,7 +107,7 @@ impl RenderState {
             .configure(&self.device_wrapper.device, &self.surface_configuration)
     }
 
-    pub(crate) fn create_render_pass_resources(&self) -> Result<RenderPassResources, OgeError> {
+    pub(crate) fn create_render_pass_resources(&self) -> Result<RenderPassResources> {
         let surface_texture = self
             .surface
             .get_current_frame()
@@ -143,7 +119,7 @@ impl RenderState {
 
         Ok(RenderPassResources {
             command_encoder: self.device_wrapper.create_command_encoder(),
-            surface_texture,
+            _surface_texture: surface_texture,
             surface_texture_view,
             render_bundles: vec![],
         })

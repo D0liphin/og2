@@ -8,9 +8,9 @@ pub struct SpriteConfiguration<'a> {
 
 #[derive(Debug)]
 pub struct Sprite {
-    label: Option<Box<str>>,
-    mesh: SpriteMesh,
-    texture: Texture,
+    pub(crate) label: Option<Box<str>>,
+    pub(crate) mesh: SpriteMesh,
+    pub(crate) texture: Texture,
 }
 
 impl Sprite {

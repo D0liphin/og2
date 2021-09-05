@@ -13,7 +13,7 @@
 ///     // s1.field is now invalid
 /// }
 /// ```
-pub(crate) unsafe fn move_field<T>(field: &mut T) -> T {
+pub(crate) unsafe fn _move_field<T>(field: &mut T) -> T {
     let replace_with = std::mem::MaybeUninit::uninit().assume_init();
     let moved_field = std::mem::replace(field, replace_with);
     std::mem::forget(field);
