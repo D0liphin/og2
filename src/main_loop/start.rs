@@ -1,4 +1,5 @@
 use crate::*;
+use wgpu::QuerySetDescriptor;
 use winit::{
     dpi::{PhysicalSize, Size},
     event::*,
@@ -31,9 +32,7 @@ fn build_window() -> (EventLoop<()>, Window) {
     (event_loop, window)
 }
 
-pub fn start<I: IntoIterator<Item = fn(&mut Oge) -> Box<dyn DynScript>>>(
-    scripts: I,
-) -> Result<()> {
+pub fn start<I: IntoIterator<Item = LoadedScript>>(scripts: I) -> Result<()> {
     env_logger::init();
 
     let (event_loop, window) = build_window();
@@ -51,7 +50,10 @@ pub fn start<I: IntoIterator<Item = fn(&mut Oge) -> Box<dyn DynScript>>>(
         );
         scripts
             .into_iter()
-            .map(|get_script| get_script(&mut oge))
+            .enumerate()
+            .map(|(i, get_script)| {
+                get_script(&mut oge).expect(&format!("could not load script with index [{}]", i))
+            })
             .collect()
     };
 
@@ -132,9 +134,17 @@ pub fn start<I: IntoIterator<Item = fn(&mut Oge) -> Box<dyn DynScript>>>(
                 }
                 oge.handlers.input_handler.update();
 
-                let render_pass = oge.finish();
+                let (render_pass, queued_operations) = oge.finish();
                 render_pass.draw_render_bundles(&mut render_state);
                 render_pass_resources.finish(&render_state);
+                
+                for operation in queued_operations {
+                    match operation {
+                        Operation::UpdateRenderPipelineConfiguration(config) => {
+                            render_state.configure_render_pipeline(config);
+                        }
+                    }
+                }
             }
 
             Event::MainEventsCleared => {

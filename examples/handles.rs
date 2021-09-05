@@ -32,16 +32,16 @@ fn chop_float(float: f32, dp: u32) -> String {
 }
 
 impl Script for FpsCounter {
-    fn start(_: &mut Oge) -> Self {
+    fn start(_: &mut Oge) -> oge::Result<Self> {
         println!(
             "
  │ FPS COUNTER │
  ├─────────────┤"
         );
-        Self {
+        Ok(Self {
             time_of_last_print: Instant::now(),
             total_update_count: 0.,
-        }
+        })
     }
 
     fn update(&mut self, _: &mut Oge) {
@@ -66,8 +66,8 @@ impl Script for FpsCounter {
 struct WindowHandler;
 
 impl Script for WindowHandler {
-    fn start(_: &mut Oge) -> Self {
-        Self
+    fn start(_: &mut Oge) -> oge::Result<Self> {
+        Ok(Self)
     }
 
     fn update(&mut self, oge: &mut Oge) {
@@ -93,35 +93,34 @@ struct Handles {
 }
 
 impl Script for Handles {
-    fn start(oge: &mut Oge) -> Self {
-        let red_texture_config = oge::TextureConfiguration {
-            source: oge::TextureSource::Color(oge::Color::from_rgba8(119, 15, 15, 255)),
-            projection_method: oge::TextureProjectionMethod::SingleColor,
-            ..Default::default()
-        };
+    fn start(oge: &mut Oge) -> oge::Result<Self> {
+        let red_texture_config =
+            oge::TextureConfiguration::color(oge::Color::from_rgba8(119, 15, 15, 255));
 
-        Self {
+        let this = Self {
             curve: oge::sprite::Curve::new(
                 oge,
                 oge::sprite::CurveConfiguration {
                     label: Some("Curve"),
                     width: 7.,
                     points: vec![oge::Vector2::new(0., 0.), oge::Vector2::new(50., 0.)],
-                    texture_configuration: &oge::TextureConfiguration {
-                        source: oge::TextureSource::Color(oge::Color::from_rgba8(159, 28, 28, 255)),
-                        ..red_texture_config
-                    },
+                    texture_configuration: &oge::TextureConfiguration::color(
+                        oge::Color::from_rgba8(159, 28, 28, 255),
+                    ),
                     style: oge::sprite::CurveStyle::DoubleJointed,
+                    z_index: oge::ZIndex::BelowAll,
                 },
             )
             .unwrap(),
-            joint_sprite: oge::Sprite::new(oge::SpriteConfiguration {
+            joint_sprite: oge.create_sprite(oge::SpriteConfiguration {
                 label: Some("Joint"),
                 mesh: oge::SpriteMesh::new_elipse(12., 12., 16),
-                texture: oge.create_texture(&red_texture_config).unwrap(),
-            }),
+                texture: &red_texture_config,
+                z_index: oge::ZIndex::AboveAll,
+            })?,
             handling_joint_index: None,
-        }
+        };
+        Ok(this)
     }
 
     fn update(&mut self, oge: &mut Oge) {
@@ -149,14 +148,25 @@ impl Script for Handles {
         {
             self.curve.push(cursor_position);
         }
+
+        let space_button_status = oge.get_key_status(oge::KeyCode::Space);
+        if space_button_status.just_pressed() {
+            oge.configure_render_pipeline(oge::RenderPipelineConfiguration {
+                anti_aliasing: oge::AntiAliasingMode::None,
+            });
+        } else if space_button_status.just_released() {
+            oge.configure_render_pipeline(oge::RenderPipelineConfiguration {
+                anti_aliasing: oge::AntiAliasingMode::Msaa4x,
+            });
+        }
     }
 
     fn render(&mut self, oge: &mut Oge) {
-        oge.draw_sprites([self.curve.get_sprite()]);
         for point in self.curve.points().iter() {
             self.joint_sprite.set_position(*point);
             oge.draw_sprites([&self.joint_sprite]);
         }
+        oge.draw_sprites([self.curve.get_sprite()]);
     }
 }
 

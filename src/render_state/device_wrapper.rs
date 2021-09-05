@@ -131,7 +131,7 @@ impl DeviceWrapper {
         })
     }
 
-    pub(crate) fn create_render_pipeline(&self) -> wgpu::RenderPipeline {
+    pub(crate) fn create_render_pipeline(&self, sample_count: u32) -> wgpu::RenderPipeline {
         let render_pipeline_layout =
             self.device
                 .create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
@@ -202,10 +202,31 @@ impl DeviceWrapper {
                 },
                 depth_stencil: None,
                 multisample: wgpu::MultisampleState {
-                    count: 1,
+                    count: sample_count,
                     ..Default::default()
                 },
             })
+    }
+
+    pub(crate) fn create_multisampled_frame_buffer(
+        &self,
+        width: u32,
+        height: u32,
+        sample_count: u32,
+    ) -> wgpu::Texture {
+        self.device.create_texture(&wgpu::TextureDescriptor {
+            label: Some("Mutlisampled Texture"),
+            sample_count,
+            size: wgpu::Extent3d {
+                width,
+                height,
+                depth_or_array_layers: 1,
+            },
+            mip_level_count: 1,
+            dimension: wgpu::TextureDimension::D2,
+            format: wgpu::TextureFormat::Bgra8UnormSrgb,
+            usage: wgpu::TextureUsages::RENDER_ATTACHMENT,
+        })
     }
 
     pub(crate) fn create_vertex_buffer(&self, contents: &[u8]) -> wgpu::Buffer {

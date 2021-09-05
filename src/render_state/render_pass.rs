@@ -6,11 +6,14 @@ pub(crate) struct RenderPassResources {
     pub(crate) surface_texture_view: wgpu::TextureView,
     pub(crate) _surface_texture: wgpu::SurfaceTexture,
     pub(crate) render_bundles: Vec<RenderBundle>,
+    pub(crate) multisampled_frame_buffer_view: wgpu::TextureView,
 }
 
 impl RenderPassResources {
     pub(crate) fn finish(self, render_state: &RenderState) {
-        render_state.queue.submit(std::iter::once(self.command_encoder.finish()));
+        render_state
+            .queue
+            .submit(std::iter::once(self.command_encoder.finish()));
         drop(self.surface_texture_view);
     }
 }
@@ -23,6 +26,7 @@ pub struct RenderPass<'a> {
 
 impl<'a> RenderPass<'a> {
     pub(crate) fn draw_render_bundles(mut self, render_state: &'a RenderState) {
+        self.render_bundles.sort_unstable();
         for render_bundle in self.render_bundles.iter() {
             self.render_pass.set_pipeline(&render_state.render_pipeline);
             self.render_pass

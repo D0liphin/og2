@@ -6,11 +6,15 @@ pub(crate) struct RenderState {
     pub(crate) device_wrapper: crate::DeviceWrapper,
     pub(crate) queue: wgpu::Queue,
     pub(crate) render_pipeline: wgpu::RenderPipeline,
+    pub(crate) multisampled_frame_buffer: wgpu::Texture,
+    pub(crate) sample_count: u32,
 }
 
 impl RenderState {
     pub(crate) const UNIFORM_BUFFER_SIZE: std::num::NonZeroU64 =
         unsafe { std::num::NonZeroU64::new_unchecked(48) };
+
+    pub(crate) const INITIAL_SAMPLE_COUNT: u32 = 4;
 
     pub fn new(window: &winit::window::Window) -> Self {
         pollster::block_on(Self::new_async(window))
@@ -19,7 +23,15 @@ impl RenderState {
     async fn new_async(window: &winit::window::Window) -> Self {
         let (device_wrapper, surface, surface_configuration, queue) =
             DeviceWrapper::new(window).await;
-        let render_pipeline = device_wrapper.create_render_pipeline();
+        let render_pipeline = device_wrapper.create_render_pipeline(Self::INITIAL_SAMPLE_COUNT);
+        let multisampled_frame_buffer = {
+            let inner_size = window.inner_size();
+            device_wrapper.create_multisampled_frame_buffer(
+                inner_size.width,
+                inner_size.height,
+                Self::INITIAL_SAMPLE_COUNT,
+            )
+        };
 
         Self {
             surface,
@@ -27,6 +39,8 @@ impl RenderState {
             device_wrapper,
             queue,
             render_pipeline,
+            multisampled_frame_buffer,
+            sample_count: Self::INITIAL_SAMPLE_COUNT,
         }
     }
 
@@ -84,11 +98,8 @@ impl RenderState {
             image_buffer,
             wgpu::ImageDataLayout {
                 offset: 0,
-                // This is safe since we checked earlier if this is (0, 0)
-                bytes_per_row: Some(unsafe {
-                    std::num::NonZeroU32::new_unchecked(dimensions.0 << 2)
-                }),
-                rows_per_image: Some(unsafe { std::num::NonZeroU32::new_unchecked(dimensions.1) }),
+                bytes_per_row: std::num::NonZeroU32::new(dimensions.0 << 2),
+                rows_per_image: std::num::NonZeroU32::new(dimensions.1),
             },
             texture_extent_3d,
         );
@@ -104,7 +115,12 @@ impl RenderState {
 
     pub(crate) fn recreate_surface(&mut self) {
         self.surface
-            .configure(&self.device_wrapper.device, &self.surface_configuration)
+            .configure(&self.device_wrapper.device, &self.surface_configuration);
+        self.multisampled_frame_buffer = self.device_wrapper.create_multisampled_frame_buffer(
+            self.surface_configuration.width,
+            self.surface_configuration.height,
+            self.sample_count,
+        );
     }
 
     pub(crate) fn create_render_pass_resources(&self) -> Result<RenderPassResources> {
@@ -122,6 +138,16 @@ impl RenderState {
             _surface_texture: surface_texture,
             surface_texture_view,
             render_bundles: vec![],
+            multisampled_frame_buffer_view: self
+                .multisampled_frame_buffer
+                .create_view(&wgpu::TextureViewDescriptor::default()),
         })
+    }
+
+    pub(crate) fn configure_render_pipeline(&mut self, config: RenderPipelineConfiguration) {
+        self.sample_count = config.anti_aliasing as u32;
+        self.render_pipeline = self
+            .device_wrapper
+            .create_render_pipeline(self.sample_count);
     }
 }

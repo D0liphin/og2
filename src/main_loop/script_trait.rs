@@ -1,6 +1,6 @@
 use crate::*;
 
-pub type LoadedScript = fn(&mut Oge) -> Box<dyn DynScript>;
+pub type LoadedScript = fn(&mut Oge) -> Result<Box<dyn DynScript>>;
 
 /// Initialises this script, returning its starting state. This function is
 /// only executed one.
@@ -25,7 +25,7 @@ pub type LoadedScript = fn(&mut Oge) -> Box<dyn DynScript>;
 ///
 #[allow(unused_variables)]
 pub trait Script: DynScript + Sized + 'static {
-    fn start(oge: &mut Oge) -> Self;
+    fn start(oge: &mut Oge) -> Result<Self>;
     fn update(&mut self, oge: &mut Oge) {}
     fn render(&mut self, oge: &mut Oge) {}
 
@@ -33,8 +33,8 @@ pub trait Script: DynScript + Sized + 'static {
         Self::get_boxed_dyn_script
     }
 
-    fn get_boxed_dyn_script(oge: &mut Oge) -> Box<dyn DynScript> {
-        Box::new(Self::start(oge))
+    fn get_boxed_dyn_script(oge: &mut Oge) -> Result<Box<dyn DynScript>> {
+        Ok(Box::new(Self::start(oge)?))
     }
 }
 

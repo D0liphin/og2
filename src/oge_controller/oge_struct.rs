@@ -4,6 +4,7 @@ pub struct Oge<'a, 'b: 'a> {
     pub(crate) handlers: &'a mut OgeHandlers,
     pub(crate) render_state: &'a mut RenderState,
     pub(crate) render_pass: RenderPass<'b>,
+    pub(crate) queued_operations: Vec<Operation>,
 }
 
 pub struct OgeHandlers {
@@ -23,8 +24,8 @@ impl OgeHandlers {
 }
 
 impl<'a, 'b> Oge<'a, 'b> {
-    pub fn create_texture(&self, config: &TextureConfiguration) -> Result<Texture> {
-        Texture::new(&self.render_state, &config)
+    pub fn create_sprite(&self, config: SpriteConfiguration) -> Result<Sprite> {
+        Sprite::new(&self.render_state, config)
     }
 
     pub fn draw_sprites<'c, T: IntoIterator<Item = &'c Sprite>>(&mut self, sprites: T) {
@@ -33,6 +34,11 @@ impl<'a, 'b> Oge<'a, 'b> {
                 .render_bundles
                 .push(sprite.get_render_bundle(&self));
         }
+    }
+
+    /// Configures the render pipeline used
+    pub fn configure_render_pipeline(&mut self, config: RenderPipelineConfiguration) {
+        self.queued_operations.push(Operation::UpdateRenderPipelineConfiguration(config));
     }
 
     /// Sets the region of the coordinate system that should be displayed to the window.
@@ -133,9 +139,18 @@ impl<'a, 'b> Oge<'a, 'b> {
         render_state: &'a mut RenderState,
         render_pass_resources: &'b mut RenderPassResources,
     ) -> Self {
+        let (view, resolve_target) = if render_state.sample_count > 1 {
+            (
+                &render_pass_resources.multisampled_frame_buffer_view,
+                Some(&render_pass_resources.surface_texture_view),
+            )
+        } else {
+            (&render_pass_resources.surface_texture_view, None)
+        };
+
         let _color_attachments = [wgpu::RenderPassColorAttachment {
-            view: &render_pass_resources.surface_texture_view,
-            resolve_target: None,
+            view,
+            resolve_target,
             ops: wgpu::Operations {
                 load: wgpu::LoadOp::Clear(wgpu::Color {
                     r: 1.0,
@@ -163,11 +178,12 @@ impl<'a, 'b> Oge<'a, 'b> {
                 render_pass,
                 render_bundles: &mut render_pass_resources.render_bundles,
             },
+            queued_operations: vec![]
         }
     }
 
     /// Consume this controller and return its `RenderPass` for drawing.
-    pub(crate) fn finish(self) -> RenderPass<'b> {
-        self.render_pass
+    pub(crate) fn finish(self) -> (RenderPass<'b>, Vec<Operation>) {
+        (self.render_pass, self.queued_operations)
     }
 }

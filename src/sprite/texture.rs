@@ -60,6 +60,24 @@ impl Default for TextureConfiguration {
     }
 }
 
+impl TextureConfiguration {
+    /// Shorthand for
+    /// ````rs
+    /// TextureConfiguration {
+    ///     source: TextureSource::Color(color),
+    ///     projection_method: TextureProjectionMethod::SingleColor,
+    ///     ..Default::default()
+    /// }
+    /// ```
+    pub fn color(color: Color) -> Self {
+        TextureConfiguration {
+            source: TextureSource::Color(color),
+            projection_method: TextureProjectionMethod::SingleColor,
+            ..Default::default()
+        }
+    }
+}
+
 #[derive(Debug)]
 pub struct Texture {
     pub(crate) texture: wgpu::Texture,

@@ -30,11 +30,18 @@ pub struct Curve {
 }
 
 pub struct CurveConfiguration<'a> {
+    /// A label used for debugging
     pub label: Option<&'a str>,
+    /// The width of this curve
     pub width: f32,
+    /// The points that are used to generate this curve (must be at least 2 in length)
     pub points: Vec<Vector2>,
+    /// The way the curve should be drawn based on the provided points
     pub style: CurveStyle,
+    /// The texture this curve should use
     pub texture_configuration: &'a TextureConfiguration,
+    /// Same as the z_index attribute on `SpriteConfiguration`
+    pub z_index: ZIndex,
 }
 
 impl Curve {
@@ -45,11 +52,12 @@ impl Curve {
         }
         let mapped_points = Self::map_points(&config.points, config.style);
         Ok(Curve {
-            sprite: Sprite::new(SpriteConfiguration {
+            sprite: Sprite::new(&oge.render_state, SpriteConfiguration {
                 label: config.label,
                 mesh: SpriteMesh::new_line(config.width, &config.points),
-                texture: oge.create_texture(config.texture_configuration)?,
-            }),
+                texture: config.texture_configuration,
+                z_index: config.z_index,
+            })?,
             points: config.points,
             mapped_points,
             width: config.width,
