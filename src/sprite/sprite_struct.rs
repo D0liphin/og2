@@ -10,6 +10,18 @@ pub struct SpriteConfiguration<'a> {
     pub opacity: f32,
 }
 
+impl Default for SpriteConfiguration<'_> {
+    fn default() -> Self {
+        SpriteConfiguration {
+            label: None,
+            mesh: SpriteMesh::new_rectangle(0.5, 0.5),
+            texture: &DEFAULT_TEXTURE_CONFIGURATION,
+            z_index: ZIndex::Specific(0),
+            opacity: 1.,
+        }
+    }
+}
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Ord)]
 /// Desribes how sprites are layered
 pub enum ZIndex {
@@ -102,7 +114,6 @@ impl Sprite {
                     );
                 }
 
-                println!("{: >2x?}", dst);
                 dst
             }
         }
@@ -172,5 +183,10 @@ impl Sprite {
         } else {
             opacity
         };
+    }
+
+    /// Returns the opacity of this sprite
+    pub fn opacity(&self) -> f32 {
+        self.opacity
     }
 }

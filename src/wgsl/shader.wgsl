@@ -9,8 +9,8 @@ struct VertexOutput {
 };
 
 [[block]] struct UniformBuffer {
-    [[align(48)]] affine2: mat3x2<f32>;
-    [[align(16)]] opacity: f32;
+    [[size(48)]] affine2: mat3x2<f32>;
+    opacity: f32;
 };
 
 // Bind Group

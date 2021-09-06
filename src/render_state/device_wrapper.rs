@@ -86,7 +86,7 @@ impl DeviceWrapper {
                     ty: wgpu::BindingType::Buffer {
                         ty: wgpu::BufferBindingType::Uniform,
                         has_dynamic_offset: false,
-                        min_binding_size: std::num::NonZeroU64::new(64),
+                        min_binding_size: Some(RenderState::UNIFORM_BUFFER_SIZE),
                     },
                     count: None,
                 },

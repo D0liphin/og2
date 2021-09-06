@@ -10,6 +10,7 @@ pub enum TextureProjectionMethod {
     SingleColor = 1,
 }
 
+#[derive(Clone, Debug)]
 pub enum TextureSource {
     Path(PathBuf),
     Bytes(&'static [u8]),
@@ -38,6 +39,14 @@ pub enum AddressMode {
     Mirror = 2,
 }
 
+pub(crate) static DEFAULT_TEXTURE_CONFIGURATION: TextureConfiguration = TextureConfiguration {
+    source: TextureSource::Color(Color::WHITE),
+    projection_method: TextureProjectionMethod::ScaleToFit,
+    filter_mode: FilterMode::Bilinear,
+    address_mode: AddressMode::Clamp,
+};
+
+#[derive(Clone, Debug)]
 /// Describes how a `Texture` should be configured
 pub struct TextureConfiguration {
     pub source: TextureSource,
@@ -51,12 +60,7 @@ pub struct TextureConfiguration {
 
 impl Default for TextureConfiguration {
     fn default() -> Self {
-        TextureConfiguration {
-            source: TextureSource::Color(Color::WHITE),
-            projection_method: TextureProjectionMethod::ScaleToFit,
-            filter_mode: FilterMode::Bilinear,
-            address_mode: AddressMode::Clamp,
-        }
+        DEFAULT_TEXTURE_CONFIGURATION.clone()
     }
 }
 

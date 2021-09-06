@@ -7,6 +7,13 @@ pub struct WindowDimensions {
     pub height: u32,
 }
 
+impl WindowDimensions {
+    /// Returns this as a `Vector2` 
+    pub fn as_vector2(self) -> Vector2 {
+        Vector2::new(self.width as f32, self.height as f32)
+    }
+}
+
 impl From<&winit::dpi::PhysicalSize<u32>> for WindowDimensions {
     fn from(physical_size: &winit::dpi::PhysicalSize<u32>) -> Self {
         Self {

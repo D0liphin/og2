@@ -33,7 +33,9 @@ impl Script for Tree {
                 top_right: oge::Vector2::new(x, y),
             })
         }
+    }
 
+    fn render(&mut self, oge: &mut Oge) {
         oge.draw_sprites([&self.sprite]);
     }
 }
