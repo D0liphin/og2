@@ -82,11 +82,11 @@ impl DeviceWrapper {
                 },
                 wgpu::BindGroupLayoutEntry {
                     binding: 2,
-                    visibility: wgpu::ShaderStages::VERTEX,
+                    visibility: wgpu::ShaderStages::VERTEX | wgpu::ShaderStages::FRAGMENT,
                     ty: wgpu::BindingType::Buffer {
                         ty: wgpu::BufferBindingType::Uniform,
                         has_dynamic_offset: false,
-                        min_binding_size: Some(RenderState::UNIFORM_BUFFER_SIZE),
+                        min_binding_size: std::num::NonZeroU64::new(64),
                     },
                     count: None,
                 },
@@ -119,7 +119,7 @@ impl DeviceWrapper {
                         offset: 0,
                         buffer: &self.device.create_buffer_init(
                             &wgpu::util::BufferInitDescriptor {
-                                label: Some("Normalization Matrix"),
+                                label: Some("Uniform Buffer"),
                                 contents: uniform_buffer_contents,
                                 usage: wgpu::BufferUsages::UNIFORM,
                             },

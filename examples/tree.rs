@@ -16,6 +16,7 @@ impl Script for Tree {
                     ..Default::default()
                 },
                 z_index: oge::ZIndex::AboveAll,
+                opacity: 1.,
             })?,
         };
         Ok(tree)
@@ -23,10 +24,9 @@ impl Script for Tree {
 
     fn update(&mut self, oge: &mut Oge) {
         if oge.window_has_resized() {
-            let window_dimensions = oge.window_dimensions();
             let (x, y) = (
-                window_dimensions.width as f32 * 0.5,
-                window_dimensions.height as f32 * 0.5,
+                oge.window_dimensions().width as f32 * 0.5,
+                oge.window_dimensions().height as f32 * 0.5,
             );
             oge.set_window_bounds(oge::Bounds {
                 bottom_left: oge::Vector2::new(-x, -y),

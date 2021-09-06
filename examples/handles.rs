@@ -109,6 +109,7 @@ impl Script for Handles {
                     ),
                     style: oge::sprite::CurveStyle::DoubleJointed,
                     z_index: oge::ZIndex::BelowAll,
+                    opacity: 1.,
                 },
             )
             .unwrap(),
@@ -117,6 +118,7 @@ impl Script for Handles {
                 mesh: oge::SpriteMesh::new_elipse(12., 12., 16),
                 texture: &red_texture_config,
                 z_index: oge::ZIndex::AboveAll,
+                opacity: 1.,
             })?,
             handling_joint_index: None,
         };
@@ -174,6 +176,6 @@ fn main() -> oge::Result<()> {
     oge::main_loop::start([
         WindowHandler::load_script(),
         Handles::load_script(),
-        FpsCounter::load_script(),
+        //FpsCounter::load_script(),
     ])
 }

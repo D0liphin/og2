@@ -49,20 +49,3 @@ impl Affine2 {
         lhs.compose(&self)
     }
 }
-
-impl Affine2 {
-    /// Returns a raw buffer containing a copy of the data in this matrix.
-    /// The buffer is formatted to satisfy the requirements of the wgsl uniform buffer
-    pub(crate) fn create_raw_buffer(&self) -> [u8; 48] {
-        use std::{mem, ptr};
-        let mut buffer: [u8; 48] = unsafe { mem::MaybeUninit::uninit().assume_init() };
-        for (i, vec) in [self.matrix2.i, self.matrix2.j, self.translation]
-            .iter()
-            .enumerate()
-        {
-            let dst = &mut buffer[i << 4] as *mut u8;
-            unsafe { ptr::copy(vec as *const Vector2 as *const u8, dst, 8) }
-        }
-        buffer
-    }
-}

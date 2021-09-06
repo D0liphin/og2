@@ -12,7 +12,7 @@ pub(crate) struct RenderState {
 
 impl RenderState {
     pub(crate) const UNIFORM_BUFFER_SIZE: std::num::NonZeroU64 =
-        unsafe { std::num::NonZeroU64::new_unchecked(48) };
+        unsafe { std::num::NonZeroU64::new_unchecked(64) };
 
     pub(crate) const INITIAL_SAMPLE_COUNT: u32 = 4;
 

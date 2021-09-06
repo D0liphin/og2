@@ -42,6 +42,8 @@ pub struct CurveConfiguration<'a> {
     pub texture_configuration: &'a TextureConfiguration,
     /// Same as the z_index attribute on `SpriteConfiguration`
     pub z_index: ZIndex,
+    /// Same as the `opacity` attribute on `SpriteConfiguration`
+    pub opacity: f32,
 }
 
 impl Curve {
@@ -57,6 +59,7 @@ impl Curve {
                 mesh: SpriteMesh::new_line(config.width, &config.points),
                 texture: config.texture_configuration,
                 z_index: config.z_index,
+                opacity: config.opacity,
             })?,
             points: config.points,
             mapped_points,

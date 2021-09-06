@@ -1,3 +1,5 @@
+use rand::distributions::Uniform;
+
 use crate::*;
 
 pub struct SpriteConfiguration<'a> {
@@ -5,6 +7,7 @@ pub struct SpriteConfiguration<'a> {
     pub mesh: SpriteMesh,
     pub texture: &'a TextureConfiguration,
     pub z_index: ZIndex,
+    pub opacity: f32,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Ord)]
@@ -29,8 +32,8 @@ impl PartialOrd for ZIndex {
             ZIndex::Specific(self_layer) => match other {
                 ZIndex::AboveAll => Ordering::Less,
                 ZIndex::BelowAll => Ordering::Greater,
-                ZIndex::Specific(other_layer) => self_layer.cmp(&other_layer)
-            }
+                ZIndex::Specific(other_layer) => self_layer.cmp(&other_layer),
+            },
         })
     }
 }
@@ -41,6 +44,7 @@ pub struct Sprite {
     pub(crate) mesh: SpriteMesh,
     pub(crate) texture: Texture,
     pub(crate) z_index: ZIndex,
+    pub(crate) opacity: f32,
 }
 
 impl Sprite {
@@ -54,24 +58,72 @@ impl Sprite {
             mesh: config.mesh,
             texture: Texture::new(render_state, config.texture)?,
             z_index: config.z_index,
+            opacity: 1.,
         };
         this.mesh.update_texture_coordinates(&this.texture);
+        this.set_opacity(config.opacity);
         Ok(this)
     }
 
     pub(crate) fn get_render_bundle(&self, oge: &Oge) -> RenderBundle {
+        #[repr(C)]
+        pub(crate) struct UniformBufferContents {
+            affine2: Affine2,
+            opacity: f32,
+        }
+
+        impl UniformBufferContents {
+            fn as_vec_u8(&self) -> Vec<u8> {
+                let size = RenderState::UNIFORM_BUFFER_SIZE.get() as usize;
+                let mut dst = Vec::<u8>::with_capacity(size);
+                unsafe {
+                    dst.set_len(size);
+                }
+                for el in dst.iter_mut() {
+                    *el = 0;
+                }
+
+                for (i, vector2) in [
+                    self.affine2.matrix2.i,
+                    self.affine2.matrix2.j,
+                    self.affine2.translation,
+                ]
+                .iter()
+                .enumerate()
+                {
+                    let dst = &mut dst[i * 16] as *mut u8;
+                    unsafe { std::ptr::copy(vector2 as *const Vector2 as *const u8, dst, 8) }
+                }
+                unsafe {
+                    std::ptr::copy(
+                        &self.opacity as *const f32 as *const u8,
+                        &mut dst[size - 16] as *mut u8,
+                        4,
+                    );
+                }
+
+                println!("{: >2x?}", dst);
+                dst
+            }
+        }
+
+        let mut affine2 = self.mesh.affine2;
+        affine2 = affine2.reverse_compose(&oge.handlers.window_handler.affine2);
+        affine2
+            .translation
+            .mul_assign(&oge.handlers.window_handler.affine2.matrix2);
+
+        let uniform_buffer_contents = UniformBufferContents {
+            affine2,
+            opacity: self.opacity,
+        };
+
         let bind_group = oge.render_state.device_wrapper.create_texture_bind_group(
             &self.texture.texture_view,
             &self.texture.sampler,
-            &{
-                let mut affine2 = self.mesh.affine2;
-                affine2 = affine2.reverse_compose(&oge.handlers.window_handler.affine2);
-                affine2
-                    .translation
-                    .mul_assign(&oge.handlers.window_handler.affine2.matrix2);
-                affine2.create_raw_buffer()
-            },
+            &uniform_buffer_contents.as_vec_u8(),
         );
+
         RenderBundle {
             vertex_buffer: oge
                 .render_state
@@ -107,5 +159,18 @@ impl Sprite {
     /// Unqueue all transformations to be exectured on this sprite, replacing them with a new one
     pub fn set_transformation(&mut self, matrix: Matrix2) {
         self.mesh.affine2 = Affine2::new(matrix.i, matrix.j, self.mesh.affine2.translation);
+    }
+
+    /// Set the opacity of this sprite. Values should be from `0.` to `1.`.  
+    ///
+    /// Values outside of these bounds will be capped.
+    pub fn set_opacity(&mut self, opacity: f32) {
+        self.opacity = if opacity > 1. {
+            1.
+        } else if opacity < 0. {
+            0.
+        } else {
+            opacity
+        };
     }
 }
