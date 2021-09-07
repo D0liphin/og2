@@ -27,6 +27,7 @@ pub struct Curve {
     pub(crate) mapped_points: Vec<Vector2>,
     pub(crate) style: CurveStyle,
     pub(crate) updated: bool,
+    pub(crate) is_loop: bool,
 }
 
 pub struct CurveConfiguration<'a> {
@@ -39,33 +40,58 @@ pub struct CurveConfiguration<'a> {
     /// The way the curve should be drawn based on the provided points
     pub style: CurveStyle,
     /// The texture this curve should use
-    pub texture_configuration: &'a TextureConfiguration,
+    pub default_texture: Texture,
     /// Same as the z_index attribute on `SpriteConfiguration`
     pub z_index: ZIndex,
     /// Same as the `opacity` attribute on `SpriteConfiguration`
     pub opacity: f32,
+    /// Determines whether this sprite will loop around and connect to itself
+    pub is_loop: bool,
+    /// Same as the `texture_projection_method` attribute on `SpriteConfiguration`
+    pub texture_projection_method: TextureProjectionMethod,
 }
+
+impl CurveConfiguration<'_> {
+    pub fn default(oge: &mut Oge) -> Result<Self> {
+        Ok(Self {
+            label: None,
+            width: 10.,
+            points: vec![Vector2::ZERO, Vector2::ZERO],
+            style: CurveStyle::PreserveAngles,
+            default_texture: Texture::default(oge)?,
+            z_index: ZIndex::default(),
+            opacity: 1.,
+            is_loop: false,
+            texture_projection_method: TextureProjectionMethod::SingleColor,
+        })
+    }
+}
+
 
 impl Curve {
     // Creates a new curve from the given points
-    pub fn new(oge: &Oge, config: CurveConfiguration) -> Result<Self> {
+    pub fn new(config: CurveConfiguration) -> Result<Self> {
         if config.points.len() < 2 {
             panic!("Curve must have at least 2 points");
         }
         let mapped_points = Self::map_points(&config.points, config.style);
         Ok(Curve {
-            sprite: Sprite::new(&oge.render_state, SpriteConfiguration {
-                label: config.label,
-                mesh: SpriteMesh::new_line(config.width, &config.points),
-                texture: config.texture_configuration,
-                z_index: config.z_index,
-                opacity: config.opacity,
-            })?,
+            sprite: Sprite::new(
+                SpriteConfiguration {
+                    label: config.label,
+                    mesh: SpriteMesh::new_line(config.width, &config.points),
+                    default_texture: config.default_texture,
+                    z_index: config.z_index,
+                    opacity: config.opacity,
+                    texture_projection_method: config.texture_projection_method,
+                },
+            )?,
             points: config.points,
             mapped_points,
             width: config.width,
             style: config.style,
             updated: true,
+            is_loop: config.is_loop,
         })
     }
 
@@ -139,6 +165,9 @@ impl Curve {
     ///
     /// Can do a lot of calculations - be careful!
     pub fn get_sprite(&mut self) -> &Sprite {
+        if self.is_loop {
+            self.points.extend([self.points[0], self.points[1]]);
+        }
         if self.updated {
             self.updated = false;
             self.sprite.mesh = SpriteMesh::new_line(self.width, {
@@ -152,6 +181,7 @@ impl Curve {
                 }
             });
         }
+        self.points.truncate(self.points.len() - 2);
         &self.sprite
     }
 
@@ -177,3 +207,10 @@ impl Curve {
         }
     }
 }
+
+impl IntoRenderBundle for &mut Curve {
+    fn get_render_bundle(self, oge: &Oge) -> RenderBundle {
+        self.get_sprite().get_render_bundle(oge)
+    }
+}
+

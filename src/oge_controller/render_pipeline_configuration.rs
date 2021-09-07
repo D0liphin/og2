@@ -12,3 +12,10 @@ pub struct RenderPipelineConfiguration {
     pub anti_aliasing: AntiAliasingMode,
 }
 
+impl Default for RenderPipelineConfiguration {
+    fn default() -> Self {
+        Self {
+            anti_aliasing: AntiAliasingMode::Msaa4x,
+        }
+    }
+}

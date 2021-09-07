@@ -24,21 +24,32 @@ impl OgeHandlers {
 }
 
 impl<'a, 'b> Oge<'a, 'b> {
+    /// Create a new `Sprite`
     pub fn create_sprite(&self, config: SpriteConfiguration) -> Result<Sprite> {
-        Sprite::new(&self.render_state, config)
+        Sprite::new(config)
     }
 
-    pub fn draw_sprites<'c, T: IntoIterator<Item = &'c Sprite>>(&mut self, sprites: T) {
-        for sprite in sprites {
-            self.render_pass
-                .render_bundles
-                .push(sprite.get_render_bundle(&self));
+    /// Create a new `Texture`
+    pub fn create_texture(&self, config: &TextureConfiguration) -> Result<Texture> {
+        Texture::new(&self.render_state, config)
+    }
+
+    /// Draws a single render bundle
+    pub fn draw_once(&mut self, render_bundle: impl IntoRenderBundle) {
+        self.render_pass.render_bundles.push(render_bundle.get_render_bundle(&self))
+    }
+
+    /// Draws several render bundles.
+    pub fn draw<T: IntoRenderBundle>(&mut self, render_bundles: impl IntoIterator<Item = T>) {
+        for render_bundle in render_bundles {
+            self.draw_once(render_bundle.get_render_bundle(&self));
         }
     }
 
     /// Configures the render pipeline used
     pub fn configure_render_pipeline(&mut self, config: RenderPipelineConfiguration) {
-        self.queued_operations.push(Operation::UpdateRenderPipelineConfiguration(config));
+        self.queued_operations
+            .push(Operation::UpdateRenderPipelineConfiguration(config));
     }
 
     /// Sets the region of the coordinate system that should be displayed to the window.
@@ -178,7 +189,7 @@ impl<'a, 'b> Oge<'a, 'b> {
                 render_pass,
                 render_bundles: &mut render_pass_resources.render_bundles,
             },
-            queued_operations: vec![]
+            queued_operations: vec![],
         }
     }
 

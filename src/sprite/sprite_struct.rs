@@ -5,20 +5,22 @@ use crate::*;
 pub struct SpriteConfiguration<'a> {
     pub label: Option<&'a str>,
     pub mesh: SpriteMesh,
-    pub texture: &'a TextureConfiguration,
+    pub default_texture: Texture,
     pub z_index: ZIndex,
     pub opacity: f32,
+    pub texture_projection_method: TextureProjectionMethod,
 }
 
-impl Default for SpriteConfiguration<'_> {
-    fn default() -> Self {
-        SpriteConfiguration {
+impl SpriteConfiguration<'_> {
+    pub fn default(oge: &Oge) -> Result<Self> {
+        Ok(SpriteConfiguration {
             label: None,
             mesh: SpriteMesh::new_rectangle(0.5, 0.5),
-            texture: &DEFAULT_TEXTURE_CONFIGURATION,
+            default_texture: Texture::default(oge)?,
             z_index: ZIndex::Specific(0),
             opacity: 1.,
-        }
+            texture_projection_method: TextureProjectionMethod::SingleColor,
+        })
     }
 }
 
@@ -50,29 +52,37 @@ impl PartialOrd for ZIndex {
     }
 }
 
+impl Default for ZIndex {
+    fn default() -> Self {
+        Self::Specific(0)
+    }
+}
+
 #[derive(Debug)]
 pub struct Sprite {
     pub(crate) label: Option<Box<str>>,
     pub(crate) mesh: SpriteMesh,
-    pub(crate) texture: Texture,
+    pub(crate) default_texture: Texture,
     pub(crate) z_index: ZIndex,
     pub(crate) opacity: f32,
+    pub(crate) texture_projection_method: TextureProjectionMethod,
 }
 
 impl Sprite {
     /// Constructs a new sprite from a given `SpriteConfiguration`
-    pub(crate) fn new(render_state: &RenderState, config: SpriteConfiguration) -> Result<Self> {
+    pub(crate) fn new(config: SpriteConfiguration) -> Result<Self> {
         let mut this = Self {
             label: match config.label {
                 Some(label) => Some(label.to_owned().into_boxed_str()),
                 None => None,
             },
             mesh: config.mesh,
-            texture: Texture::new(render_state, config.texture)?,
+            default_texture: config.default_texture,
             z_index: config.z_index,
             opacity: 1.,
+            texture_projection_method: config.texture_projection_method,
         };
-        this.mesh.update_texture_coordinates(&this.texture);
+        this.mesh.update_texture_coordinates(&this.default_texture, &this.texture_projection_method);
         this.set_opacity(config.opacity);
         Ok(this)
     }
@@ -130,8 +140,8 @@ impl Sprite {
         };
 
         let bind_group = oge.render_state.device_wrapper.create_texture_bind_group(
-            &self.texture.texture_view,
-            &self.texture.sampler,
+            &self.default_texture.texture_view,
+            &self.default_texture.sampler,
             &uniform_buffer_contents.as_vec_u8(),
         );
 
@@ -188,5 +198,11 @@ impl Sprite {
     /// Returns the opacity of this sprite
     pub fn opacity(&self) -> f32 {
         self.opacity
+    }
+}
+
+impl IntoRenderBundle for &Sprite {
+    fn get_render_bundle(self, oge: &Oge) -> RenderBundle {
+        self.get_render_bundle(oge)
     }
 }

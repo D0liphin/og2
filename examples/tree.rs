@@ -10,13 +10,14 @@ impl Script for Tree {
             sprite: oge.create_sprite(oge::SpriteConfiguration {
                 label: Some("Tree"),
                 mesh: oge::SpriteMesh::new_rectangle(500.0, 500.0),
-                texture: &oge::TextureConfiguration {
+                default_texture: oge.create_texture(&oge::TextureConfiguration {
                     source: oge::TextureSource::Bytes(include_bytes!("./tree.png")),
                     filter_mode: oge::FilterMode::Point,
                     ..Default::default()
-                },
+                })?,
                 z_index: oge::ZIndex::AboveAll,
                 opacity: 1.,
+                texture_projection_method: oge::TextureProjectionMethod::SingleColor,
             })?,
         };
         Ok(tree)
@@ -36,7 +37,7 @@ impl Script for Tree {
     }
 
     fn render(&mut self, oge: &mut Oge) {
-        oge.draw_sprites([&self.sprite]);
+        oge.draw_once(&self.sprite);
     }
 }
 

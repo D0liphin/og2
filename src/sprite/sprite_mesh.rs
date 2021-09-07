@@ -119,11 +119,6 @@ impl SpriteMesh {
             indices.extend([0, 1, 2, 1, 3, 2]);
         }
 
-        // Although it is not possible for lines to be parallel, it is possible (and even likely) that
-        // some will be coincident. If multiple points lie on the same line, we needn't generate
-        // `VertexInput`s for them, and so we increment `skips` so that our index buffer still points to
-        // the correct vertices.
-        let mut skips = 0;
         for next_line_index in 1..points.len() - 1 {
             let line_index = next_line_index - 1;
             // I have extensively checked this and verified that this does not, under all scenarios result
@@ -139,11 +134,14 @@ impl SpriteMesh {
                     VertexInput::new(vector_1.unwrap()),
                     VertexInput::new(vector_2.unwrap()),
                 ]);
-                let i = ((line_index as u16) << 1) - skips;
-                indices.extend([i, i + 1, i + 2, i + 1, i + 3, i + 2]);
             } else {
-                skips += 2;
+                vertices.extend([
+                    VertexInput::new(left_line.position),
+                    VertexInput::new(right_line.position),
+                ]);
             }
+            let i = (line_index as u16) << 1;
+            indices.extend([i, i + 1, i + 2, i + 1, i + 3, i + 2]);
         }
 
         {
@@ -196,8 +194,12 @@ impl SpriteMesh {
     /// ## TODO
     /// Update this method so that the various projection methods actually have the desired
     /// effect.
-    pub(crate) fn update_texture_coordinates(&mut self, texture: &Texture) {
-        match texture.projection_method {
+    pub(crate) fn update_texture_coordinates(
+        &mut self,
+        texture: &Texture,
+        texture_projection_method: &TextureProjectionMethod,
+    ) {
+        match texture_projection_method {
             TextureProjectionMethod::ScaleToFit => {
                 let bounds = self.bounds();
                 let width = bounds.width();

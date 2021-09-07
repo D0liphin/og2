@@ -34,10 +34,10 @@ impl Script for ParticleEffects {
             particle_sprite: oge.create_sprite(oge::SpriteConfiguration {
                 label: Some("Particle"),
                 mesh: oge::SpriteMesh::new_elipse(4., 4., 8),
-                texture: &oge::TextureConfiguration::color(oge::Color::from_rgba8(
+                default_texture: oge.create_texture(&oge::TextureConfiguration::color(oge::Color::from_rgba8(
                     220, 20, 20, 255,
-                )),
-                ..Default::default()
+                )))?,
+                ..oge::SpriteConfiguration::default(oge)?
             })?,
             particles: vec![],
         };
@@ -89,7 +89,7 @@ impl Script for ParticleEffects {
         for particle in self.particles.iter() {
             self.particle_sprite.set_position(particle.position);
             self.particle_sprite.set_opacity(particle.opacity);
-            oge.draw_sprites([&self.particle_sprite]);
+            oge.draw_once(&self.particle_sprite);
         }
     }
 }

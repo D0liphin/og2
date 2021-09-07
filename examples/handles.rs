@@ -99,26 +99,29 @@ impl Script for Handles {
 
         let this = Self {
             curve: oge::sprite::Curve::new(
-                oge,
                 oge::sprite::CurveConfiguration {
                     label: Some("Curve"),
-                    width: 7.,
-                    points: vec![oge::Vector2::new(0., 0.), oge::Vector2::new(50., 0.)],
-                    texture_configuration: &oge::TextureConfiguration::color(
+                    width: 12.,
+                    points: vec![
+                        oge::Vector2::new(0., 0.),
+                        oge::Vector2::new(50., 0.),
+                        oge::Vector2::new(25., 50.),
+                    ],
+                    default_texture: oge.create_texture(&oge::TextureConfiguration::color(
                         oge::Color::from_rgba8(159, 28, 28, 255),
-                    ),
+                    ))?,
                     style: oge::sprite::CurveStyle::DoubleJointed,
                     z_index: oge::ZIndex::BelowAll,
-                    opacity: 1.,
+                    ..oge::sprite::CurveConfiguration::default(oge)?
                 },
             )
             .unwrap(),
             joint_sprite: oge.create_sprite(oge::SpriteConfiguration {
                 label: Some("Joint"),
                 mesh: oge::SpriteMesh::new_elipse(12., 12., 16),
-                texture: &red_texture_config,
+                default_texture: oge.create_texture(&red_texture_config)?,
                 z_index: oge::ZIndex::AboveAll,
-                opacity: 1.,
+                ..oge::SpriteConfiguration::default(oge)?
             })?,
             handling_joint_index: None,
         };
@@ -166,9 +169,9 @@ impl Script for Handles {
     fn render(&mut self, oge: &mut Oge) {
         for point in self.curve.points().iter() {
             self.joint_sprite.set_position(*point);
-            oge.draw_sprites([&self.joint_sprite]);
+            oge.draw_once(&self.joint_sprite);
         }
-        oge.draw_sprites([self.curve.get_sprite()]);
+        oge.draw_once(self.curve.get_sprite());
     }
 }
 

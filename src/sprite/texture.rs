@@ -12,9 +12,16 @@ pub enum TextureProjectionMethod {
 
 #[derive(Clone, Debug)]
 pub enum TextureSource {
+    /// Source the texture from a specific file
     Path(PathBuf),
+    /// Source the texture from a static buffer (recommended)
     Bytes(&'static [u8]),
+    /// The entire texture is a uniform color (recommended if this is what you want).
+    /// Use `TextureProjectionMethod::SingleColor` with this
     Color(Color),
+    /// The sprite has no texture. Use this if you intend to draw the sprite with
+    /// `Sprite.with_texture(&Texture)`
+    Null,
 }
 
 #[repr(C)]
@@ -40,8 +47,8 @@ pub enum AddressMode {
 }
 
 pub(crate) static DEFAULT_TEXTURE_CONFIGURATION: TextureConfiguration = TextureConfiguration {
-    source: TextureSource::Color(Color::WHITE),
-    projection_method: TextureProjectionMethod::ScaleToFit,
+    source: TextureSource::Null,
+    projection_method: TextureProjectionMethod::SingleColor,
     filter_mode: FilterMode::Bilinear,
     address_mode: AddressMode::Clamp,
 };
@@ -87,7 +94,6 @@ pub struct Texture {
     pub(crate) texture: wgpu::Texture,
     pub(crate) texture_view: wgpu::TextureView,
     pub(crate) sampler: wgpu::Sampler,
-    pub(crate) projection_method: TextureProjectionMethod,
     pub(crate) dimensions: (u32, u32),
 }
 
@@ -113,6 +119,8 @@ impl Texture {
         Ok((texture, texture_view, dimensions))
     }
 
+    const NULL_TEXTURE: &'static [u8] = &[0, 0, 0, 0];
+
     pub(crate) fn new(render_state: &RenderState, config: &TextureConfiguration) -> Result<Self> {
         let (texture, texture_view, dimensions) = match &config.source {
             TextureSource::Path(path_buf) => {
@@ -134,6 +142,16 @@ impl Texture {
                 let texture_view = texture.create_view(&wgpu::TextureViewDescriptor::default());
                 (texture, texture_view, dimensions)
             }
+            TextureSource::Null => {
+                let dimensions = (1, 1);
+                let texture = render_state.create_image_texture_from_buffer(
+                    None,
+                    Self::NULL_TEXTURE,
+                    dimensions,
+                )?;
+                let texture_view = texture.create_view(&wgpu::TextureViewDescriptor::default());
+                (texture, texture_view, dimensions)
+            }
         };
 
         let filter_mode = unsafe { crate::util::cast_enum(config.filter_mode) };
@@ -145,7 +163,6 @@ impl Texture {
             sampler: render_state
                 .device_wrapper
                 .create_sampler(filter_mode, address_mode),
-            projection_method: config.projection_method,
             dimensions,
         })
     }
@@ -153,5 +170,11 @@ impl Texture {
     /// Returns the dimensions of this texture in pixels
     pub fn dimensions(&self) -> (u32, u32) {
         self.dimensions
+    }
+}
+
+impl Texture {
+    pub fn default(oge: &Oge) -> Result<Self> {
+        Texture::new(oge.render_state, &DEFAULT_TEXTURE_CONFIGURATION)
     }
 }
