@@ -48,7 +48,6 @@ pub enum AddressMode {
 
 pub(crate) static DEFAULT_TEXTURE_CONFIGURATION: TextureConfiguration = TextureConfiguration {
     source: TextureSource::Null,
-    projection_method: TextureProjectionMethod::SingleColor,
     filter_mode: FilterMode::Bilinear,
     address_mode: AddressMode::Clamp,
 };
@@ -57,8 +56,6 @@ pub(crate) static DEFAULT_TEXTURE_CONFIGURATION: TextureConfiguration = TextureC
 /// Describes how a `Texture` should be configured
 pub struct TextureConfiguration {
     pub source: TextureSource,
-    /// The projection method that should be used for this texture
-    pub projection_method: TextureProjectionMethod,
     /// The filter mode to be used for this texture's sampler
     pub filter_mode: FilterMode,
     /// The address mode to be used for this texture's sampler
@@ -83,7 +80,6 @@ impl TextureConfiguration {
     pub fn color(color: Color) -> Self {
         TextureConfiguration {
             source: TextureSource::Color(color),
-            projection_method: TextureProjectionMethod::SingleColor,
             ..Default::default()
         }
     }

@@ -17,7 +17,7 @@ impl Script for Tree {
                 })?,
                 z_index: oge::ZIndex::AboveAll,
                 opacity: 1.,
-                texture_projection_method: oge::TextureProjectionMethod::SingleColor,
+                texture_projection_method: oge::TextureProjectionMethod::ScaleToFit,
             })?,
         };
         Ok(tree)

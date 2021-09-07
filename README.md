@@ -28,7 +28,10 @@ impl Script for Tree {
                 label: Some("Tree"),
                 sprite: oge.create_sprite(oge::SpriteConfiguration {
                     label: Some("Tree Sprite"),
-                    source: 
+                    texture: oge.create_texture(&oge::TextureConfiguration {
+                        source: oge::TextureSource::Bytes(include_bytes!("./tree.png")),
+                        filter_mode: 
+                    })
                 })
             })
         })
