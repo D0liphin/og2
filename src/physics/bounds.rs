@@ -1,6 +1,6 @@
 /// Represents a 2-dimensional region spanning from `bottom_left` to `top_right`.  
 /// The bounding box represented by `Bounds` is always aligned with the coordinate axes.
-#[derive(Default, Debug, Clone)]
+#[derive(Default, Debug, Clone, Copy)]
 pub struct Bounds {
     pub bottom_left: crate::Vector2,
     pub top_right: crate::Vector2,

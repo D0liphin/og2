@@ -88,7 +88,7 @@ impl Script for WindowHandler {
 #[derive(Debug)]
 struct Handles {
     curve: oge::sprite::Curve,
-    joint_sprite: oge::Sprite,
+    joint_sprite: [oge::Sprite; 2],
     handling_joint_index: Option<usize>,
 }
 
@@ -98,31 +98,38 @@ impl Script for Handles {
             oge::TextureConfiguration::color(oge::Color::from_rgba8(119, 15, 15, 255));
 
         let this = Self {
-            curve: oge::sprite::Curve::new(
-                oge::sprite::CurveConfiguration {
-                    label: Some("Curve"),
-                    width: 12.,
-                    points: vec![
-                        oge::Vector2::new(0., 0.),
-                        oge::Vector2::new(50., 0.),
-                        oge::Vector2::new(25., 50.),
-                    ],
-                    default_texture: oge.create_texture(&oge::TextureConfiguration::color(
-                        oge::Color::from_rgba8(159, 28, 28, 255),
-                    ))?,
-                    style: oge::sprite::CurveStyle::DoubleJointed,
-                    z_index: oge::ZIndex::BelowAll,
-                    ..oge::sprite::CurveConfiguration::default(oge)?
-                },
-            )
-            .unwrap(),
-            joint_sprite: oge.create_sprite(oge::SpriteConfiguration {
-                label: Some("Joint"),
-                mesh: oge::SpriteMesh::new_elipse(12., 12., 16),
+            curve: oge::sprite::Curve::new(oge::sprite::CurveConfiguration {
+                label: Some("Curve"),
+                width: 8.,
+                points: vec![
+                    oge::Vector2::new(0., 0.),
+                    oge::Vector2::new(50., 0.),
+                    oge::Vector2::new(25., 50.),
+                ],
                 default_texture: oge.create_texture(&red_texture_config)?,
-                z_index: oge::ZIndex::AboveAll,
-                ..oge::SpriteConfiguration::default(oge)?
-            })?,
+                style: oge::sprite::CurveStyle::DoubleJointed,
+                z_index: oge::ZIndex::BelowAll,
+                is_loop: true,
+                ..oge::sprite::CurveConfiguration::default(oge)?
+            })
+            .unwrap(),
+            joint_sprite: [
+                oge.create_sprite(oge::SpriteConfiguration {
+                    label: Some("Joint"),
+                    mesh: oge::SpriteMesh::new_elipse(12., 12., 16),
+                    default_texture: oge.create_texture(&red_texture_config)?,
+                    z_index: oge::ZIndex::AboveAll,
+                    ..oge::SpriteConfiguration::default(oge)?
+                })?,
+                oge.create_sprite(oge::SpriteConfiguration {
+                    label: Some("Joint"),
+                    mesh: oge::SpriteMesh::new_elipse(4., 4., 16),
+                    default_texture: oge
+                        .create_texture(&oge::TextureConfiguration::color(oge::Color::WHITE))?,
+                    z_index: oge::ZIndex::AboveAll,
+                    ..oge::SpriteConfiguration::default(oge)?
+                })?,
+            ],
             handling_joint_index: None,
         };
         Ok(this)
@@ -135,7 +142,7 @@ impl Script for Handles {
         if self.handling_joint_index.is_none() && left_mouse_button_status.just_pressed() {
             let (joint_index, distance_to_nearest_joint) =
                 self.curve.nearest_joint(&cursor_position);
-            if distance_to_nearest_joint < 6. {
+            if distance_to_nearest_joint < 13. {
                 self.handling_joint_index = Some(joint_index);
             }
         } else if left_mouse_button_status.just_released() {
@@ -168,8 +175,10 @@ impl Script for Handles {
 
     fn render(&mut self, oge: &mut Oge) {
         for point in self.curve.points().iter() {
-            self.joint_sprite.set_position(*point);
-            oge.draw_once(&self.joint_sprite);
+            for component in self.joint_sprite.iter_mut() {
+                component.set_position(*point);
+            }
+            oge.draw(&self.joint_sprite);
         }
         oge.draw_once(self.curve.get_sprite());
     }

@@ -26,6 +26,8 @@ impl From<&winit::dpi::PhysicalSize<u32>> for WindowDimensions {
 pub struct WindowHandler {
     /// The dimensions of this window
     pub(crate) dimensions: WindowDimensions,
+    /// The Bounds for this window
+    pub(crate) bounds: Bounds,
     /// The affine matrix that is used to transform points into normalized device coordinates
     pub(crate) affine2: Affine2,
     /// Affine matrix used to convert a physical position to a viewable region point
@@ -38,6 +40,10 @@ impl WindowHandler {
     pub(crate) fn new(window: &winit::window::Window) -> Self {
         Self {
             dimensions: WindowDimensions::from(&window.inner_size()),
+            bounds: Bounds { 
+                bottom_left: Vector2::new(-0.5, -0.5),
+                top_right: Vector2::new(0.5, 0.5),
+            },
             affine2: Affine2::default(),
             reverse_affine2: Affine2::default(),
             dimensions_updated: true,
@@ -69,7 +75,9 @@ impl WindowHandler {
                 j: Vector2::new(0.0, -height / window_height),
             },
             translation: Vector2::new(-frac_width_2, frac_height_2),
-        }
+        };
+
+        self.bounds = bounds;
     }
 
     pub(crate) fn resize(&mut self, dimensions: WindowDimensions) {

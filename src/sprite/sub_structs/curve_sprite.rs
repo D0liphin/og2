@@ -181,7 +181,9 @@ impl Curve {
                 }
             });
         }
-        self.points.truncate(self.points.len() - 2);
+        if self.is_loop {
+            self.points.truncate(self.points.len() - 2);
+        }
         &self.sprite
     }
 
