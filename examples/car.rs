@@ -95,45 +95,22 @@ impl Script for Car {
             self.direction = self.direction.rotate(self.torque);
         }
 
-        let mut acceleration = Vector2::new_euclidean(self.direction, 1.);
-        let angle_between_velocity_and_car_direction =
-            Vector2::angle_between(&acceleration, &self.velocity);
-        let top_speed = 12000.;
-        let get_signed_drag = |speed: f32| {
-            // let abs_drag = (1. / (0.1 * top_speed))
-            //     * (-0.4 * (2. * angle_between_velocity_and_car_direction).cos() + 0.5)
-            //     * speed.powi(2);
-            // if speed.is_sign_positive() {
-            //     -abs_drag
-            // } else {
-            //     abs_drag
-            // }
-            0.
+        let acceleration = {
+            let direction_vector = Vector2::new_euclidean(self.direction, 1.);
+            let relative_y_velocity = self.velocity.project(&direction_vector);
+            let relative_x_velocity = self.velocity.project(&direction_vector.rotate_90_cw());
+
+            oge.draw_debug_arrow(vec![self.position, relative_y_velocity.add(&self.position)], None);
+            oge.draw_debug_arrow(vec![self.position, relative_x_velocity.add(&self.position)], None);
+
+            #[allow(unused_mut)]
+            let mut acceleration = direction_vector.scale(50.);
+            
+            acceleration
         };
 
-        acceleration.scale_assign(
-            if oge.get_key_down(oge::KeyCode::W) {
-                600.
-            } else {
-                0.
-            } + get_signed_drag(self.velocity.magnitude()),
-        );
-        acceleration.scale_assign(oge.delta_time());
-        self.velocity.add_assign(&acceleration);
+        self.velocity.add_assign(&acceleration.scale(oge.delta_time()));
 
-        // {
-        //     let angle_between_x_axis_and_car_direction = Vector2::angle_between(&Vector2::RIGHT, &acceleration);
-        //     let angle_between_y_axis_and_car_direction = Vector2::angle_between(&Vector2::UP, &acceleration);
-
-        //     let friction_coefficient_x = 0.05 * (2. * angle_between_x_axis_and_car_direction).cos() + 0.94;
-        //     let friction_coefficient_y = 0.05 * (2. * angle_between_y_axis_and_car_direction).cos() + 0.94;
-
-        //     self.velocity.x *= friction_coefficient_x;
-        //     self.velocity.y *= friction_coefficient_y;
-        // }
-
-        self.velocity
-            .scale_assign(0.01 * (2. * angle_between_velocity_and_car_direction).cos() + 0.985);
         self.position
             .add_assign(&self.velocity.scale(oge.delta_time()));
 

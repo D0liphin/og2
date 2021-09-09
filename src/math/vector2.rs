@@ -103,26 +103,37 @@ impl Vector2 {
     /// Returns this vectors direction, relative to another point `origin`
     pub fn relative_direction(&self, origin: &Vector2) -> f32 {
         (*self).sub(origin).direction()
-    } 
+    }
 
-    /// Returns the midpoint of two vectors 
+    /// Returns the midpoint of two vectors
     pub fn midpoint(&self, other: &Self) -> Self {
         self.add(&other).scale(0.5)
     }
 
-    /// Rotates this vector pi / 2 radians counter clockwise, returning the result 
-    pub fn rotate_90_ccw(self) -> Self  {
+    /// Rotates this vector pi / 2 radians counter clockwise, returning the result
+    pub fn rotate_90_ccw(self) -> Self {
         Self::new(-self.y, self.x)
     }
 
-    /// Rotates this vector pi / 2 radians clockwise, returning the result 
-    pub fn rotate_90_cw(self) -> Self  {
+    /// Rotates this vector pi / 2 radians clockwise, returning the result
+    pub fn rotate_90_cw(self) -> Self {
         Self::new(self.y, -self.x)
     }
 
     /// Rotates this vector pi radians, returning the result
-    pub fn rotate_180(self) -> Self  {
+    pub fn rotate_180(self) -> Self {
         self.scale(-1.)
+    }
+
+    /// Projects this vecotr onto another, returning the result. The resulting
+    /// vector witll have the same direction as `projection_target`, but not necessarily
+    /// the same magnitude.
+    ///
+    /// If the vector is orthogonal to `projection_target`, the resulting vector will
+    /// be `Vector2::ZERO`
+    pub fn project(&self, projection_target: &Self) -> Self {
+        projection_target
+            .with_magnitude(self.dot(projection_target) / projection_target.magnitude())
     }
 }
 

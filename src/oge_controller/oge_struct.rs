@@ -36,7 +36,9 @@ impl<'a, 'b> Oge<'a, 'b> {
 
     /// Draws a single render bundle
     pub fn draw_once(&mut self, render_bundle: impl IntoRenderBundle) {
-        self.render_pass.render_bundles.push(render_bundle.get_render_bundle(&self))
+        self.render_pass
+            .render_bundles
+            .push(render_bundle.get_render_bundle(&self))
     }
 
     /// Draws several render bundles.
@@ -44,6 +46,89 @@ impl<'a, 'b> Oge<'a, 'b> {
         for render_bundle in render_bundles {
             self.draw_once(render_bundle.get_render_bundle(&self));
         }
+    }
+
+    fn destructure_color_width_opacity(
+        &self,
+        color_width_opacity: Option<(Option<Color>, Option<f32>, Option<f32>)>,
+    ) -> (Color, f32, f32) {
+        let (color, width, opacity) = color_width_opacity.unwrap_or((None, None, None));
+        let color = color.unwrap_or(Color::RED);
+        let width = width.unwrap_or(5.);
+        let opacity = opacity.unwrap_or(0.8);
+        (color, width, opacity)
+    }
+
+    /// Draws a line for debugging. Do not use this for actual line drawing - make a curve and
+    /// modify its points instead.
+    ///
+    /// `color_width_opacity` defaults to `(Color::RED, 5., 0.8)`
+    pub fn draw_debug_line(
+        &mut self,
+        points: Vec<Vector2>,
+        color_width_opacity: Option<(Option<Color>, Option<f32>, Option<f32>)>,
+    ) {
+        let (color, width, opacity) = self.destructure_color_width_opacity(color_width_opacity);
+        let default_texture =
+            if let Ok(texture) = self.create_texture(&TextureConfiguration::color(color)) {
+                texture
+            } else {
+                return;
+            };
+        let mut curve = if let Ok(curve) = sprite::Curve::new(sprite::CurveConfiguration {
+            label: Some("Debug Line"),
+            points,
+            width,
+            opacity,
+            style: CurveStyle::DoubleJointed,
+            z_index: ZIndex::AboveAll,
+            default_texture,
+            is_loop: false,
+            texture_projection_method: TextureProjectionMethod::SingleColor,
+        }) {
+            curve
+        } else {
+            return;
+        };
+
+        self.draw_once(curve.get_sprite());
+    }
+
+    /// Same effect as `Oge::draw_debug_line`, but adds an arrow tip to the end of the line.
+    pub fn draw_debug_arrow(
+        &mut self,
+        points: Vec<Vector2>,
+        color_width_opacity: Option<(Option<Color>, Option<f32>, Option<f32>)>,
+    ) {
+        let arrow_head_position = {
+            let last_point = points[points.len() - 1];
+            let penultimate_point = points[points.len() - 2];
+            last_point.sub(&penultimate_point).with_magnitude(last_point.distance_to(&penultimate_point) - )
+        };
+        self.draw_debug_line(points, color_width_opacity);
+        
+        let (color, width, opacity) = self.destructure_color_width_opacity(color_width_opacity);
+        let default_texture =
+            if let Ok(texture) = self.create_texture(&TextureConfiguration::color(color)) {
+                texture
+            } else {
+                return;
+            }; 
+
+        let mut arrow_head_sprite = if let Ok(sprite) = self.create_sprite(SpriteConfiguration {
+            label: Some("Debug Arrow Head"),
+            mesh: SpriteMesh::new_elipse(width * 2., width * 2., 3),
+            z_index: ZIndex::AboveAll,
+            default_texture,
+            opacity,
+            texture_projection_method: TextureProjectionMethod::SingleColor,
+        }) {
+            sprite
+        } else {
+            return;
+        };
+        arrow_head_sprite.set_position(arrow_head_position);
+        self.draw_once(&arrow_head_sprite);
     }
 
     /// Configures the render pipeline used
