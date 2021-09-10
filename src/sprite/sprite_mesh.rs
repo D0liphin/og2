@@ -80,16 +80,16 @@ impl SpriteMesh {
 
     /// Creates a new triangle from 3 points. Use `SpriteMesh::new_triangle_unchecked()`
     /// to create a new triangle without verifying the points are entered counter-clockwise
-    pub fn new_triangle(points: [Vector2; 3]) -> Self {
+    pub fn new_triangle(mut points: [Vector2; 3]) -> Self {
         let angle_between_first_and_last_points =
             Vector2::angle_between(&points[0].sub(&points[1]), &points[2].sub(&points[1]));
         if angle_between_first_and_last_points.is_sign_negative() {
-            std::mem::swap(&mut points[2], &mut points[0]);
+            points.swap(0, 2);
         }
         Self {
             vertices: points.map(|point| VertexInput::new(point)).to_vec(),
             indices: vec![0, 1, 2],
-            
+            affine2: Affine2::default(),
         }
     }
 

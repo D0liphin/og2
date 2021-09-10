@@ -55,14 +55,14 @@ impl<'a, 'b> Oge<'a, 'b> {
         let (color, width, opacity) = color_width_opacity.unwrap_or((None, None, None));
         let color = color.unwrap_or(Color::RED);
         let width = width.unwrap_or(5.);
-        let opacity = opacity.unwrap_or(0.8);
+        let opacity = opacity.unwrap_or(1.);
         (color, width, opacity)
     }
 
     /// Draws a line for debugging. Do not use this for actual line drawing - make a curve and
     /// modify its points instead.
     ///
-    /// `color_width_opacity` defaults to `(Color::RED, 5., 0.8)`
+    /// `color_width_opacity` defaults to `(Color::RED, 5., 1.)`
     pub fn draw_debug_line(
         &mut self,
         points: Vec<Vector2>,
@@ -79,7 +79,7 @@ impl<'a, 'b> Oge<'a, 'b> {
             label: Some("Debug Line"),
             points,
             width,
-            opacity,
+            opacity: 1.,
             style: CurveStyle::DoubleJointed,
             z_index: ZIndex::AboveAll,
             default_texture,
@@ -100,24 +100,24 @@ impl<'a, 'b> Oge<'a, 'b> {
         points: Vec<Vector2>,
         color_width_opacity: Option<(Option<Color>, Option<f32>, Option<f32>)>,
     ) {
-        let arrow_head_position = {
-            let last_point = points[points.len() - 1];
-            let penultimate_point = points[points.len() - 2];
-            last_point.sub(&penultimate_point).with_magnitude(last_point.distance_to(&penultimate_point) - )
-        };
-        self.draw_debug_line(points, color_width_opacity);
-        
         let (color, width, opacity) = self.destructure_color_width_opacity(color_width_opacity);
+
         let default_texture =
             if let Ok(texture) = self.create_texture(&TextureConfiguration::color(color)) {
                 texture
             } else {
                 return;
-            }; 
+            };
 
+        let arrow_head_width = width * 2.;
+        let arrow_head_height = 3_f32.sqrt() * arrow_head_width;
         let mut arrow_head_sprite = if let Ok(sprite) = self.create_sprite(SpriteConfiguration {
             label: Some("Debug Arrow Head"),
-            mesh: SpriteMesh::new_elipse(width * 2., width * 2., 3),
+            mesh: SpriteMesh::new_triangle([
+                Vector2::new(-arrow_head_width, 0.),
+                Vector2::new(arrow_head_width, 0.),
+                Vector2::new(0., arrow_head_height),
+            ]),
             z_index: ZIndex::AboveAll,
             default_texture,
             opacity,
@@ -127,7 +127,12 @@ impl<'a, 'b> Oge<'a, 'b> {
         } else {
             return;
         };
-        arrow_head_sprite.set_position(arrow_head_position);
+        arrow_head_sprite.set_position(*points.last().unwrap());
+        arrow_head_sprite.transform(&Matrix2::rotation(
+            points[points.len() - 1].relative_direction(&points[points.len() - 2]),
+        ));
+
+        self.draw_debug_line(points, color_width_opacity);
         self.draw_once(&arrow_head_sprite);
     }
 
